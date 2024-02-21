@@ -1,0 +1,1 @@
+# microsoft-365-current-license-mapper
