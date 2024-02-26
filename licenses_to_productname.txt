@@ -1,4 +1,4 @@
-Product_Display_Name	String_Id
+Product_Display_Name	Licenses
 Advanced Communications	ADV_COMMS
 AI Builder Capacity add-on	CDSAICAPACITY
 App Connect IW	SPZA_IW
