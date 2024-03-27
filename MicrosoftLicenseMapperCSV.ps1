@@ -1,9 +1,24 @@
-# CreateCSVFilesForSKUsAndServicePlans.PS1
-# A script to grab the SKU (products) used in a Microsoft 365 tenant and extract SKU and service plan information
-# into CSV files so that they can be edited (to add display name information) and then used to generate a licensing
-# report for the tenant.
-# Uses cmdlets from the Microsoft Graph SDK for PowerShell
-# Connect to the Graph, specifing the tenant and profile to use - Add your tenant identifier here
+<#
+    .SYNOPSIS
+    Script to create CSV files for SKUs and Service Plans in a Microsoft 365 tenant.
+    For `CreateCSVFilesForSKUsAndServicePlans.PS1`.
+
+    .DESCRIPTION
+    This script connects to Microsoft Graph to retrieve SKU and service plan information,
+    exporting them into CSV files for further editing and usage in licensing reports.
+
+    .AUTHOR
+    Tycho Loke
+    Website: https://currentcloud.net
+    Blog: https://tycholoke.com
+    Tycho Loke is the creator of this script, dedicated to streamlining Microsoft 365 license
+    management and reporting. For more scripts and insights, visit the author's website and blog.
+
+    .NOTES
+    Version: 1.0
+    Updated: [Date]
+#>
+
 Connect-MgGraph -Scope Directory.Read.All -NoWelcome
 
 #Import the Product names and service plan identifiers for licensing CSV file downloaded from https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference
