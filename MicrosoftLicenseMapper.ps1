@@ -1,5 +1,25 @@
-# ReportUserAssignedLicenses-MgGraph.PS1
-# Create a report of licenses assigned to Azure AD user accounts using the Microsoft Graph PowerShell SDK cmdlets
+<#
+    .SYNOPSIS
+    Script to report on licenses assigned to Azure AD user accounts using Microsoft Graph PowerShell SDK cmdlets.
+    For `MicrosoftLicenseMapper.ps1`.
+
+    .DESCRIPTION
+    Generates detailed and summarized reports of Microsoft 365 licenses assigned to users,
+    including cost analysis and usage insights, outputting to CSV and HTML formats.
+
+    .AUTHOR
+    Tycho Loke
+    Website: https://currentcloud.net
+    Blog: https://tycholoke.com
+    As the maintainer and creator of this script, Tycho Loke offers tools for effective license
+    management within Microsoft 365 environments. Explore more resources and get in touch
+    through the author's website and blog.
+
+    .NOTES
+    Version: 1.0
+    Updated: 27/03/2024
+#>
+
 
 Function Get-LicenseCosts {
   # Function to calculate the annual costs of the licenses assigned to a user account  
