@@ -56,22 +56,6 @@ $Version = "1.8"
 # Connect to the Graph, specifing the tenant and profile to use - Add your tenant identifier here
 Connect-MgGraph -Scope "Directory.AccessAsUser.All, Directory.Read.All, AuditLog.Read.All" -NoWelcome
 
-<#
-Alternative: Use Application ID and Secured Password for authentication (you could also pass a certificate thumbnail)
-$ApplicationId = "<applicationId>"
-$SecuredPassword = "<securedPassword>"
-$tenantID = "<tenantId>"
-
-$SecuredPasswordPassword = ConvertTo-SecureString -String $SecuredPassword -AsPlainText -Force
-$ClientSecretCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $ApplicationId, $SecuredPasswordPassword
-Connect-MgGraph -TenantId $tenantID -ClientSecretCredential $ClientSecretCredential
-#>
-
-# This step depends on the availability of some CSV files generated to hold information about the product licenses used in the tenant and 
-# the service plans in those licenses. See https://github.com/12Knocksinna/Office365itpros/blob/master/CreateCSVFilesForSKUsAndServicePlans.PS1 
-# for code to generate the CSVs. After the files are created, you need to edit them to add the display names for the SKUs and plans.
-# Build Hash of Skus for lookup so that we report user-friendly display names - you need to create these CSV files from SKU and service plan
-# data in your tenant.
 
 $SkuDataPath = "C:\temp\SkuDataComplete.csv"
 $ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv"
@@ -87,11 +71,24 @@ If ((Test-Path $servicePlanPath) -eq $False) {
 }
    
 $ImportSkus = Import-CSV $skuDataPath
-$ImportServicePlans = Import-CSV $servicePlanPath
 $SkuHashTable = @{}
-ForEach ($Line in $ImportSkus) { $SkuHashTable.Add([string]$Line.SkuId, [string]$Line.DisplayName) }
-$ServicePlanHashTable = @{}
-ForEach ($Line2 in $ImportServicePlans) { $ServicePlanHashTable.Add([string]$Line2.ServicePlanId, [string]$Line2.ServicePlanDisplayName) }
+
+# Before your loop, initialize the hashtable
+$PricingHashTable = @{}
+
+
+ForEach ($Line in $ImportSkus) {
+  If (-not [string]::IsNullOrWhiteSpace($Line.SkuId)) {
+    If (-not $SkuHashTable.ContainsKey([string]$Line.SkuId)) {
+      $SkuHashTable.Add([string]$Line.SkuId, [string]$Line.DisplayName)
+    } Else {
+      Write-Host ("Duplicate SKU ID detected and skipped: " + $Line.SkuId)
+    }
+  } Else {
+    Write-Host "Found an entry with null or empty SkuId, skipping..."
+  }
+}
+
 
 # If pricing information is in the $ImportSkus array, we can add the information to the report. We prepare to do this
 # by setting the $PricingInfoAvailable to $true and populating the $PricingHashTable
@@ -181,20 +178,27 @@ ForEach ($User in $Users) {
       }
     }
 
-    # Report any disabled service plans in licenses
-    $License = $UserLicenses | Where-Object { -not [string]::IsNullOrWhiteSpace($_.DisabledPlans) }
-    # Check if disabled service plans in a license
-    ForEach ($DisabledPlan in $License.DisabledPlans) {
-      # Try and find what service plan is disabled
-      If ($ServicePlanHashTable.ContainsKey($DisabledPlan) -eq $True) {
-        # We found a match in the Service Plans hash table
-        $DisabledPlans += $ServicePlanHashTable.Item($DisabledPlan) 
-      }
-      Else {
-        # Nothing doing, so output the Service Plan ID
-        $DisabledPlans += $DisabledPlan 
-      }
-    } # End ForEach disabled plans
+# Iterate over each license in the user's assigned licenses
+ForEach ($License in $UserLicenses) {
+    # Check if the license has any disabled plans
+    If (-not [string]::IsNullOrWhiteSpace($License.DisabledPlans)) {
+        # Iterate over each disabled plan in the current license
+        ForEach ($DisabledPlan in $License.DisabledPlans) {
+            # Ensure $ServicePlanHashTable is not null before checking it
+            If ($null -ne $ServicePlanHashTable -and $ServicePlanHashTable.ContainsKey($DisabledPlan)) {
+                # We found a match in the Service Plans hash table
+                $DisabledPlans += $ServicePlanHashTable.Item($DisabledPlan)
+            }
+            Else {
+                # Handle the case where the plan is not found or ServicePlanHashTable is null
+                Write-Host "Warning: ServicePlanHashTable is null or does not contain the plan: $DisabledPlan"
+                # Optionally collect these for later review or logging
+                $DisabledPlans += $DisabledPlan
+            }
+        }
+    }
+}
+
 
     # Detect if any duplicate licenses are assigned (direct and group-based)
     # Build a list of assigned SKUs
