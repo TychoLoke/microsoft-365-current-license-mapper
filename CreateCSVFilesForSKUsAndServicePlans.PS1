@@ -1,87 +1,107 @@
 <#
     .SYNOPSIS
-    Enhanced script to create CSV files for SKUs and Service Plans in a Microsoft 365 tenant.
-    Designed for better public usability.
+    Script to create CSV files for SKUs and Service Plans in a Microsoft 365 tenant.
+    For CreateCSVFilesForSKUsAndServicePlans.PS1.
 
     .DESCRIPTION
     This script connects to Microsoft Graph to retrieve SKU and service plan information,
-    providing structured output with enhanced error handling and user prompts.
+    exporting them into CSV files for further editing and usage in licensing reports.
 
     .AUTHOR
     Tycho Loke
-    Updated by ChatGPT for public usability improvements.
+    Website: https://currentcloud.net
+    Blog: https://tycholoke.com
+    Tycho Loke is the creator of this script, dedicated to streamlining Microsoft 365 license
+    management and reporting. For more scripts and insights, visit the author's website and blog.
 
     .NOTES
-    Version: 2.0
+    Version: 1.2
     Updated: [Date]
 #>
 
-# Ensure the script runs with the required permissions
+# Prevent PowerShell from closing on error
 $ErrorActionPreference = "Stop"
 
-Function Connect-ToM365 {
-    try {
-        Connect-MgGraph -Scope "Directory.Read.All" -NoWelcome
-        Write-Host "Successfully connected to Microsoft Graph." -ForegroundColor Green
-    } catch {
-        Write-Host "Failed to connect to Microsoft Graph. Ensure you have the correct permissions." -ForegroundColor Red
-        Exit
-    }
+# Ensure Microsoft Graph module is installed
+if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
+    Write-Host "Installing Microsoft.Graph module..."
+    Install-Module Microsoft.Graph -Scope CurrentUser -Force -AllowClobber
 }
 
-Function Import-CSVData {
-    param (
-        [string]$FilePath
-    )
-    if (!(Test-Path $FilePath)) {
-        Write-Host "Error: CSV file not found at $FilePath. Ensure you have downloaded the necessary file." -ForegroundColor Red
-        Exit
-    }
-    return Import-Csv -Path $FilePath
+# Select Microsoft Graph Profile for best compatibility
+Select-MgProfile -Name "beta" # Change to "v1.0" if needed
+
+# Attempt to Connect to Microsoft Graph with MFA Support
+try {
+    Write-Host "Connecting to Microsoft Graph with MFA support..."
+    Connect-MgGraph -Scopes "Directory.Read.All" -NoWelcome
+    Write-Host "Successfully connected to Microsoft Graph!" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Failed to connect to Microsoft Graph. Check your credentials and MFA settings." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    Exit
 }
 
-Function Generate-SKUReport {
-    param (
-        [array]$Identifiers, 
-        [array]$Skus
-    )
-    
-    $SKU_friendly = $Identifiers | Select-Object GUID, String_Id, Product_Display_Name -Unique
-    $Skus | Select-Object SkuId, SkuPartNumber, @{Name = "DisplayName"; Expression = { ($SKU_friendly | Where-Object -Property GUID -eq $_.SkuId).Product_Display_Name } } |
-    Export-Csv -NoTypeInformation "C:\temp\SkuDataComplete.csv"
-    Write-Host "SKU Data Exported Successfully." -ForegroundColor Green
+# Import the Product names and service plan identifiers for licensing
+$csvPath = "C:\temp\Product names and service plan identifiers for licensing.csv"
+if (-Not (Test-Path $csvPath)) {
+    Write-Host "Error: CSV file not found at $csvPath. Please ensure the file is available." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    Exit
+}
+[array]$Identifiers = Import-Csv -Path $csvPath
+
+# Select SKUs with friendly display name
+[array]$SKU_friendly = $Identifiers | Select-Object GUID, String_Id, Product_Display_Name -Unique
+
+# Select service plans with friendly display name
+[array]$SP_friendly = $Identifiers | Select-Object Service_Plan_Id, Service_Plan_Name, Service_Plans_Included_Friendly_Names -Unique
+
+# Get products used in tenant
+try {
+    Write-Host "Fetching subscribed SKUs from Microsoft 365 tenant..."
+    [Array]$Skus = Get-MgSubscribedSku
+    Write-Host "Successfully retrieved SKU data!" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Unable to fetch SKU data from Microsoft Graph." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    Exit
 }
 
-Function Generate-ServicePlanReport {
-    param (
-        [array]$Identifiers, 
-        [array]$Skus
-    )
-    
-    $SP_friendly = $Identifiers | Select-Object Service_Plan_Id, Service_Plan_Name, Service_Plans_Included_Friendly_Names -Unique
-    $SPData = [System.Collections.Generic.List[Object]]::new()
-    
-    ForEach ($S in $Skus) {
-        ForEach ($SP in $S.ServicePlans) {
-            $SPData.Add([PSCustomObject]@{
-                ServicePlanId = $SP.ServicePlanId
-                ServicePlanName = $SP.ServicePlanName
-                ServicePlanDisplayName = ($SP_friendly | Where-Object { $_.Service_Plan_Id -eq $SP.ServicePlanId }).Service_Plans_Included_Friendly_Names | Select-Object -First 1 
-            })
+# Generate CSV of all product SKUs used in tenant
+$skuCsvPath = "C:\temp\SkuDataComplete.csv"
+try {
+    $Skus | Select-Object SkuId, SkuPartNumber, @{Name = "DisplayName"; Expression = { ($SKU_friendly | Where-Object -Property GUID -eq $_.SkuId).Product_Display_Name } } | Export-Csv -NoTypeInformation -Path $skuCsvPath
+    Write-Host "SKU data exported to: $skuCsvPath" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Failed to export SKU data." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    Exit
+}
+
+# Generate list of all service plans used in SKUs in tenant
+$SPData = [System.Collections.Generic.List[Object]]::new()
+ForEach ($S in $Skus) {
+    ForEach ($SP in $S.ServicePlans) {
+        $SPLine = [PSCustomObject][Ordered]@{  
+            ServicePlanId          = $SP.ServicePlanId
+            ServicePlanName        = $SP.ServicePlanName
+            # Use 'Service_Plans_Included_Friendly_Names' from $SP_friendly for 'ServicePlanDisplayName'
+            ServicePlanDisplayName = ($SP_friendly | Where-Object { $_.Service_Plan_Id -eq $SP.ServicePlanId }).Service_Plans_Included_Friendly_Names | Select-Object -First 1 
         }
+        $SPData.Add($SPLine)
     }
-    $SPData | Sort-Object ServicePlanId -Unique | Export-csv "C:\Temp\ServicePlanDataComplete.csv" -NoTypeInformation
-    Write-Host "Service Plan Data Exported Successfully." -ForegroundColor Green
 }
 
-# Main Execution
-Connect-ToM365
+$servicePlanCsvPath = "C:\Temp\ServicePlanDataComplete.csv"
+try {
+    $SPData | Sort-Object ServicePlanId -Unique | Export-Csv -NoTypeInformation -Path $servicePlanCsvPath
+    Write-Host "Service Plan data exported to: $servicePlanCsvPath" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Failed to export Service Plan data." -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    Exit
+}
 
-$csvFilePath = "C:\temp\Product names and service plan identifiers for licensing.csv"
-$Identifiers = Import-CSVData -FilePath $csvFilePath
-$Skus = Get-MgSubscribedSku
-
-Generate-SKUReport -Identifiers $Identifiers -Skus $Skus
-Generate-ServicePlanReport -Identifiers $Identifiers -Skus $Skus
-
-Write-Host "Script Execution Completed Successfully." -ForegroundColor Cyan
+Write-Host "Script execution completed successfully!" -ForegroundColor Green
+Read-Host "Press Enter to exit"
