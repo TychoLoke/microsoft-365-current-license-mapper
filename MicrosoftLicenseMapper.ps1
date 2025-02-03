@@ -51,7 +51,7 @@ Function Get-LicenseCosts {
 $Version = "1.8"
 
 # Default currency - can be overwritten by a value read into the $ImportSkus array
-[string]$Currency = "USD"
+[string]$Currency = "EUR"
 
 # Connect to the Graph, specifing the tenant and profile to use - Add your tenant identifier here
 Connect-MgGraph -Scope "Directory.AccessAsUser.All, Directory.Read.All, AuditLog.Read.All" -NoWelcome
@@ -92,7 +92,7 @@ ForEach ($Line in $ImportSkus) {
 
 # If pricing information is in the $ImportSkus array, we can add the information to the report. We prepare to do this
 # by setting the $PricingInfoAvailable to $true and populating the $PricingHashTable
-$PricingInfoAvailable = $false
+$PricingInfoAvailable = $true
 
 If ($ImportSkus[0].Price) {
   $PricingInfoAvailable = $true
@@ -112,8 +112,6 @@ $Users = Get-MgUser -All -ConsistencyLevel eventual -CountVariable Records `
   -Property id, displayName, userPrincipalName, country, department, assignedLicenses, `
   licenseAssignmentStates, createdDateTime, jobTitle, signInActivity, companyName | `
   Where-Object { $_.AssignedLicenses.Count -gt 0 } | Sort-Object DisplayName
-
-$Users = $Users[0..49]  # <-- Limits the dataset to the first 50 users
 
 
 If (!($Users)) { 
@@ -413,78 +411,6 @@ If ($PricingInfoAvailable) {
   [array]$NoCountry = $Report | Where-Object { $null -eq $_.Country }
   $NoCountryCosts = ("{0} {1}" -f $Currency, ('{0:N2}' -f ($NoCountry | Measure-Object UserCosts -Sum).Sum))
 }
-
-$HtmlHead = @"
-<html>
-   <head>
-       <style>
-           BODY {font-family: Arial; font-size: 10pt;}
-           H1, H2, H3 {font-family: 'Segoe UI Light','Segoe UI','Lucida Grande',Verdana,Arial,Helvetica,sans-serif;}
-           TABLE {border: 1px solid black; border-collapse: collapse; font-size: 10pt; width: 100%;}
-           TH {border: 1px solid #969595; background: #dddddd; padding: 5px; color: #000000; cursor: pointer;}
-           TD {border: 1px solid #969595; padding: 5px;}
-           td.pass {background: #B7EB83;}
-           td.warn {background: #FFF275;}
-           td.fail {background: #FF2626; color: #ffffff;}
-           td.info {background: #85D4FF;}
-           .search-box, .filter-box, .pagination {margin: 10px 0;}
-           .page-button {cursor: pointer; padding: 5px 10px; border: 1px solid black; margin-right: 5px; background: #f1f1f1;}
-           .active-page {background-color: #dddddd;}
-       </style>
-   </head>
-   <body>
-       <div align="center">
-           <h1>Microsoft 365 License Report</h1>
-           <h2><b>For the $Orgname Tenant</b></h2>
-           <h3>Generated: $RunDate</h3>
-       </div>
-"@
-
-$HtmlBody1 = @"
-       <div>
-           <p>Report created for: $OrgName</p>
-           <p>Created: $RunDate</p>
-           <p>-----------------------------------------------------------------------------------------------------------------------------</p>
-           <p>Number of licensed user accounts found: $($Report.Count)</p>
-           <p>Number of underused user accounts found: $($UnderUsedAccounts.Count)</p>
-           <p>Percent underused user accounts: $PercentUnderusedAccounts%</p>
-           <p>Accounts detected with duplicate licenses: $DuplicateSKUsAccounts</p>
-           <p>Count of duplicate licenses: $DuplicateSKULicenses</p>
-           <p>Count of errors: $LicenseErrorCount</p>
-           <p>-----------------------------------------------------------------------------------------------------------------------------</p>
-       </div>
-       
-       <h2>Product License Distribution</h2>
-
-       <!-- Search and Filter Controls -->
-       <div class="search-box">
-           <label for="search">Search Users: </label>
-           <input type="text" id="search" onkeyup="searchTable()" placeholder="Type to search...">
-       </div>
-
-       <div class="filter-box">
-           <label for="licenseFilter">Filter by License: </label>
-           <select id="licenseFilter" onchange="filterTable()">
-               <option value="All">All</option>
-               <option value="E3">E3</option>
-               <option value="E5">E5</option>
-               <option value="Business Premium">Business Premium</option>
-               <option value="F3">F3</option>
-           </select>
-       </div>
-
-       <!-- Table with pagination -->
-       <table id="licenseTable">
-           <thead>
-               <tr>
-                   <th onclick="sortTable(0)">User</th>
-                   <th onclick="sortTable(1)">Email</th>
-                   <th onclick="sortTable(2)">License Type</th>
-                   <th onclick="sortTable(3)">Status</th>
-               </tr>
-           </thead>
-           <tbody>
-"@
 
 # Generate table rows dynamically
 # Create the HTML report
