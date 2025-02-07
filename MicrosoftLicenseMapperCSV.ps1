@@ -11,11 +11,9 @@
     Tycho Loke
     Website: https://currentcloud.net
     Blog: https://tycholoke.com
-    Tycho Loke is the creator of this script, dedicated to streamlining Microsoft 365 license
-    management and reporting. For more scripts and insights, visit the author's website and blog.
 
     .NOTES
-    Version: 1.2
+    Version: 1.3
     Updated: [Date]
 #>
 
@@ -27,9 +25,6 @@ if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
     Write-Host "Installing Microsoft.Graph module..."
     Install-Module Microsoft.Graph -Scope CurrentUser -Force -AllowClobber
 }
-
-# Select Microsoft Graph Profile for best compatibility
-Select-MgProfile -Name "beta" # Change to "v1.0" if needed
 
 # Attempt to Connect to Microsoft Graph with MFA Support
 try {
@@ -83,11 +78,11 @@ try {
 $SPData = [System.Collections.Generic.List[Object]]::new()
 ForEach ($S in $Skus) {
     ForEach ($SP in $S.ServicePlans) {
-        $SPLine = [PSCustomObject][Ordered]@{  
+        $SPLine = [PSCustomObject][Ordered]@{
             ServicePlanId          = $SP.ServicePlanId
             ServicePlanName        = $SP.ServicePlanName
             # Use 'Service_Plans_Included_Friendly_Names' from $SP_friendly for 'ServicePlanDisplayName'
-            ServicePlanDisplayName = ($SP_friendly | Where-Object { $_.Service_Plan_Id -eq $SP.ServicePlanId }).Service_Plans_Included_Friendly_Names | Select-Object -First 1 
+            ServicePlanDisplayName = ($SP_friendly | Where-Object { $_.Service_Plan_Id -eq $SP.ServicePlanId }).Service_Plans_Included_Friendly_Names | Select-Object -First 1
         }
         $SPData.Add($SPLine)
     }
