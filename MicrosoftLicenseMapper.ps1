@@ -1,134 +1,258 @@
 <#
     .SYNOPSIS
-    Script to report on licenses assigned to Azure AD user accounts using Microsoft Graph PowerShell SDK cmdlets.
-    For MicrosoftLicenseMapper.ps1.
+    Generates comprehensive Microsoft 365 license reports with cost analysis and usage insights.
 
     .DESCRIPTION
-    Generates detailed and summarized reports of Microsoft 365 licenses assigned to users,
-    including cost analysis and usage insights, outputting to CSV and HTML formats.
+    This script connects to Microsoft Graph to analyze and report on Microsoft 365 license assignments.
+    It generates detailed reports in both CSV and HTML formats, including:
+    - User license assignments (direct and group-based)
+    - Cost analysis by user, department, and country
+    - Duplicate license detection
+    - Inactive account identification
+    - Service plan visibility
 
-    .AUTHOR
-    Tycho Loke
-    Website: https://currentcloud.net
-    Blog: https://tycholoke.com
-    As the maintainer and creator of this script, Tycho Loke offers tools for effective license
-    management within Microsoft 365 environments. Explore more resources and get in touch
-    through the author's website and blog.
+    .PARAMETER SkuDataPath
+    Path to the SKU data CSV file (default: C:\temp\SkuDataComplete.csv)
+
+    .PARAMETER ServicePlanPath
+    Path to the service plan data CSV file (default: C:\temp\ServicePlanDataComplete.csv)
+
+    .PARAMETER CSVOutputFile
+    Path for the CSV output report (default: C:\temp\Microsoft365LicensesReport.CSV)
+
+    .PARAMETER HtmlReportFile
+    Path for the HTML output report (default: C:\temp\Microsoft365LicensesReport.html)
+
+    .EXAMPLE
+    .\MicrosoftLicenseMapper.ps1
+    Runs the script with default file paths
 
     .NOTES
-    Version: 1.0
+    Author: Tycho Loke
+    Website: https://currentcloud.net
+    Blog: https://tycholoke.com
+    Version: 1.8
     Updated: 27/03/2024
+
+    Requires:
+    - Microsoft.Graph PowerShell module
+    - Appropriate Microsoft 365 admin permissions
+    - Pre-generated SKU and Service Plan CSV files (run MicrosoftLicenseMapperCSV.ps1 first)
+
+    .LINK
+    https://github.com/TychoLoke/microsoft-365-current-license-mapper
 #>
 
 
 Function Get-LicenseCosts {
-  # Function to calculate the annual costs of the licenses assigned to a user account  
+  <#
+  .SYNOPSIS
+  Calculates the annual cost of licenses assigned to a user account.
+
+  .DESCRIPTION
+  This function computes the total annual licensing cost for a given set of licenses
+  by looking up pricing information in the global PricingHashTable.
+
+  .PARAMETER Licenses
+  Array of license SKU IDs to calculate costs for
+
+  .OUTPUTS
+  Returns the total annual cost as a decimal value
+  #>
   [cmdletbinding()]
   Param( [array]$Licenses )
+
   [int]$Costs = 0
+
   ForEach ($License in $Licenses) {
     Try {
       [string]$LicenseCost = $PricingHashTable[$License]
-      # Monthly cost in cents (because some licenses cost sums like 16.40)
+
+      # Convert monthly cost to cents to avoid floating-point precision issues
+      # (e.g., licenses costing $16.40/month)
       [float]$LicenseCostCents = [float]$LicenseCost * 100
+
       If ($LicenseCostCents -gt 0) {
-        # Compute annual cost for the license
+        # Calculate annual cost (monthly cost * 12 months)
         [float]$AnnualCost = $LicenseCostCents * 12
-        # Add to the cumulative license costs
+
+        # Add to cumulative total
         $Costs = $Costs + ($AnnualCost)
-        # Write-Host ("License {0} Cost {1} running total {2}" -f $License, $LicenseCost, $Costs)
       }
     }
     Catch {
-      Write-Host ("Error finding license {0} in pricing table - please check" -f $License)
+      Write-Host ("Warning: Unable to find pricing for license SKU {0}" -f $License) -ForegroundColor Yellow
     }
   }
-  # Return 
+
+  # Convert back from cents to currency units
   Return ($Costs / 100)
 } 
 
+#region Script Configuration and Initialization
+
+# Script metadata
 [datetime]$RunDate = Get-Date -format "dd-MMM-yyyy HH:mm:ss"
 $Version = "1.8"
 
-# Default currency - can be overwritten by a value read into the $ImportSkus array
+# Default currency (can be overridden by Currency column in SkuDataComplete.csv)
 [string]$Currency = "EUR"
 
-# Connect to the Graph, specifing the tenant and profile to use - Add your tenant identifier here
-Connect-MgGraph -Scope "Directory.AccessAsUser.All, Directory.Read.All, AuditLog.Read.All" -NoWelcome
+Write-Host "===============================================" -ForegroundColor Cyan
+Write-Host "  Microsoft 365 License Mapper v$Version" -ForegroundColor Cyan
+Write-Host "===============================================" -ForegroundColor Cyan
+Write-Host ""
 
-
+# File paths - Modify these if using different locations
 $SkuDataPath = "C:\temp\SkuDataComplete.csv"
 $ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv"
-$CSVOutputFile = "c:\temp\Microsoft365LicensesReport.CSV"
-$HtmlReportFile = "c:\temp\Microsoft365LicensesReport.html"
+$CSVOutputFile = "C:\temp\Microsoft365LicensesReport.CSV"
+$HtmlReportFile = "C:\temp\Microsoft365LicensesReport.html"
+
+# Initialize counters
 $UnlicensedAccounts = 0
 
-If ((Test-Path $skuDataPath) -eq $False) {
-  Write-Host ("Can't find the product data file ({0}). Exiting..." -f $skuDataPath) ; break 
-}
-If ((Test-Path $servicePlanPath) -eq $False) {
-  Write-Host ("Can't find the serivice plan data file ({0}). Exiting..." -f $servicePlanPath) ; break 
-}
-   
-$ImportSkus = Import-CSV $skuDataPath
-$SkuHashTable = @{}
+#endregion
 
-# Before your loop, initialize the hashtable
+#region Microsoft Graph Connection
+
+Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Yellow
+Write-Host "You will be prompted to sign in with your Microsoft 365 admin account." -ForegroundColor Gray
+Write-Host ""
+
+Try {
+  Connect-MgGraph -Scope "Directory.AccessAsUser.All, Directory.Read.All, AuditLog.Read.All" -NoWelcome -ErrorAction Stop
+  Write-Host "Successfully connected to Microsoft Graph!" -ForegroundColor Green
+  Write-Host ""
+}
+Catch {
+  Write-Host "Failed to connect to Microsoft Graph." -ForegroundColor Red
+  Write-Host "Error: $_" -ForegroundColor Red
+  Write-Host ""
+  Write-Host "Please ensure you have:" -ForegroundColor Yellow
+  Write-Host "  - Valid Microsoft 365 admin credentials" -ForegroundColor Yellow
+  Write-Host "  - Appropriate permissions (Global Admin, Global Reader, or License Admin)" -ForegroundColor Yellow
+  Write-Host "  - Microsoft Graph PowerShell SDK installed" -ForegroundColor Yellow
+  Exit
+}
+
+#endregion
+
+#region Validate Required Files
+
+Write-Host "Validating required CSV files..." -ForegroundColor Yellow
+
+If ((Test-Path $skuDataPath) -eq $False) {
+  Write-Host ("Can't find the product data file ({0}). Exiting..." -f $skuDataPath) -ForegroundColor Red
+  Write-Host "Please run MicrosoftLicenseMapperCSV.ps1 first to generate the required CSV files." -ForegroundColor Yellow
+  Disconnect-MgGraph
+  Exit
+}
+
+If ((Test-Path $servicePlanPath) -eq $False) {
+  Write-Host ("Can't find the service plan data file ({0}). Exiting..." -f $servicePlanPath) -ForegroundColor Red
+  Write-Host "Please run MicrosoftLicenseMapperCSV.ps1 first to generate the required CSV files." -ForegroundColor Yellow
+  Disconnect-MgGraph
+  Exit
+}
+
+Write-Host "Required files found!" -ForegroundColor Green
+Write-Host ""
+
+#endregion
+
+#region Load and Process SKU Data
+
+Write-Host "Loading SKU and pricing data..." -ForegroundColor Yellow
+
+# Import SKU data from CSV
+$ImportSkus = Import-CSV $skuDataPath
+
+# Initialize hash tables for SKU and pricing lookups
+$SkuHashTable = @{}
 $PricingHashTable = @{}
 
 
+# Build SKU lookup hash table (maps SKU IDs to friendly display names)
 ForEach ($Line in $ImportSkus) {
   If (-not [string]::IsNullOrWhiteSpace($Line.SkuId)) {
     If (-not $SkuHashTable.ContainsKey([string]$Line.SkuId)) {
       $SkuHashTable.Add([string]$Line.SkuId, [string]$Line.DisplayName)
     } Else {
-      Write-Host ("Duplicate SKU ID detected and skipped: " + $Line.SkuId)
+      Write-Host ("Warning: Duplicate SKU ID detected and skipped: " + $Line.SkuId) -ForegroundColor Yellow
     }
   } Else {
-    Write-Host "Found an entry with null or empty SkuId, skipping..."
+    Write-Host "Warning: Found an entry with null or empty SkuId, skipping..." -ForegroundColor Yellow
   }
 }
 
-
-# If pricing information is in the $ImportSkus array, we can add the information to the report. We prepare to do this
-# by setting the $PricingInfoAvailable to $true and populating the $PricingHashTable
-$PricingInfoAvailable = $true
+# Check if pricing information is available and populate pricing hash table
+$PricingInfoAvailable = $False
 
 If ($ImportSkus[0].Price) {
-  $PricingInfoAvailable = $true
+  Write-Host "Pricing information detected - cost analysis will be included in reports" -ForegroundColor Green
+  $PricingInfoAvailable = $True
   $Global:PricingHashTable = @{}
-  ForEach ($Line in $ImportSkus) { 
-    $PricingHashTable.Add([string]$Line.SkuId, [string]$Line.Price) 
+
+  ForEach ($Line in $ImportSkus) {
+    If (-not [string]::IsNullOrWhiteSpace($Line.SkuId) -and -not [string]::IsNullOrWhiteSpace($Line.Price)) {
+      $PricingHashTable.Add([string]$Line.SkuId, [string]$Line.Price)
+    }
   }
+
+  # Override default currency if specified in CSV
   If ($ImportSkus[0].Currency) {
     [string]$Currency = ($ImportSkus[0].Currency)
+    Write-Host "Currency set to: $Currency" -ForegroundColor Cyan
   }
+} Else {
+  Write-Host "No pricing information found - cost analysis will be unavailable" -ForegroundColor Yellow
+  Write-Host "To enable cost analysis, add 'Price' and 'Currency' columns to SkuDataComplete.csv" -ForegroundColor Gray
 }
 
-# Find tenant accounts - but filtered so that we only fetch those with licenses
-Write-Host "Finding licensed user accounts..."
+Write-Host ""
+
+#endregion
+
+#region Retrieve Licensed User Accounts
+
+Write-Host "Retrieving licensed user accounts from Microsoft 365..." -ForegroundColor Yellow
 
 $Users = Get-MgUser -All -ConsistencyLevel eventual -CountVariable Records `
   -Property id, displayName, userPrincipalName, country, department, assignedLicenses, `
   licenseAssignmentStates, createdDateTime, jobTitle, signInActivity, companyName | `
   Where-Object { $_.AssignedLicenses.Count -gt 0 } | Sort-Object DisplayName
 
-
-If (!($Users)) { 
-  Write-Host "No licensed user accounts found - exiting"; break 
+If (!($Users)) {
+  Write-Host "No licensed user accounts found in the tenant." -ForegroundColor Yellow
+  Disconnect-MgGraph
+  Exit
 }
-Else { 
-  Write-Host ("{0} Licensed user accounts found - now processing their license data..." -f $Users.Count) 
+Else {
+  Write-Host ("{0} licensed user accounts found!" -f $Users.Count) -ForegroundColor Green
+  Write-Host ""
 }
 
+# Get organization information and unique department/country values
 [array]$Departments = $Users.Department | Sort-Object -Unique
 [array]$Countries = $Users.Country | Sort-Object -Unique
 $OrgName = (Get-MgOrganization).DisplayName
-$DuplicateSKUsAccounts = 0; $DuplicateSKULicenses = 0; $LicenseErrorCount = 0
+
+# Initialize tracking variables
+$DuplicateSKUsAccounts = 0
+$DuplicateSKULicenses = 0
+$LicenseErrorCount = 0
 $Report = [System.Collections.Generic.List[Object]]::new()
 $i = 0
 [float]$TotalUserLicenseCosts = 0
 [float]$TotalBoughtLicenseCosts = 0
+
+#endregion
+
+#region Process Each User Account
+
+Write-Host "Processing license assignments for each user..." -ForegroundColor Cyan
+Write-Host ""
 
 ForEach ($User in $Users) {
   $UnusedAccountWarning = "OK"; $i++; $UserCosts = 0
@@ -473,10 +597,35 @@ $HtmlReport | Out-File $HtmlReportFile -Encoding UTF8
 
 
 $Report | Export-CSV -NoTypeInformation $CSVOutputFile
+
+# Display completion summary
 Write-Host ""
-Write-Host "All done. Output files are" $CSVOutputFile "and" $ReportFile
-
+Write-Host "===============================================" -ForegroundColor Green
+Write-Host "   License Report Generation Complete!" -ForegroundColor Green
+Write-Host "===============================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "Output Files:" -ForegroundColor Cyan
+Write-Host "  CSV Report:  $CSVOutputFile" -ForegroundColor White
+Write-Host "  HTML Report: $HtmlReportFile" -ForegroundColor White
+Write-Host ""
+Write-Host "Report Summary:" -ForegroundColor Cyan
+Write-Host "  Licensed Accounts:     $($Report.Count)" -ForegroundColor White
+Write-Host "  Underused Accounts:    $($UnderUsedAccounts.Count)" -ForegroundColor White
+Write-Host "  Duplicate Licenses:    $DuplicateSKULicenses" -ForegroundColor White
+Write-Host "  License Errors:        $LicenseErrorCount" -ForegroundColor White
+Write-Host ""
+Write-Host "Disconnecting from Microsoft Graph..." -ForegroundColor Yellow
 Disconnect-MgGraph
+Write-Host "Session ended successfully." -ForegroundColor Green
+Write-Host ""
 
-# Do not use our scripts in production until you are satisfied that the code meets the need of your organization. Never run any code downloaded from the Internet without
-# first validating the code in a non-production environment.
+<#
+    DISCLAIMER:
+    This script is provided as-is without warranty of any kind. Always test in a non-production
+    environment before deploying to production. The author and contributors are not responsible
+    for any data loss, service disruption, or issues arising from the use of this script.
+
+    Never run scripts downloaded from the Internet without first validating the code and
+    understanding its functionality. Review and customize this script to meet your organization's
+    specific needs and security requirements.
+#>

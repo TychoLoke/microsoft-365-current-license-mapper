@@ -1,108 +1,296 @@
 # Microsoft 365 Current License Mapper
 
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Preparing Your CSV File](#preparing-your-csv-file)
+  - [Mapping Licenses with MicrosoftLicenseMapper.ps1](#mapping-licenses-with-microsoftlicensemapperps1)
+- [Configuration](#configuration)
+- [Output Files](#output-files)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+- [Author](#author)
+
 ## Overview
-The Microsoft 365 Current License Mapper is a PowerShell tool designed for system administrators and IT professionals to efficiently map and manage Microsoft 365 licenses within their organizations. This tool simplifies the identification and allocation of licenses, ensuring that users have appropriate access to Microsoft 365 services.
+
+The Microsoft 365 Current License Mapper is a comprehensive PowerShell solution designed for system administrators and IT professionals to efficiently audit, map, and manage Microsoft 365 licenses within their organizations. This tool provides detailed insights into license allocation, costs, and usage patterns, enabling better resource optimization and cost management.
 
 ## Features
 
-- **License Mapping**: Automatically maps current Microsoft 365 licenses to users based on input data.
-- **CSV Support**: Leverages CSV files for input, facilitating the management of large sets of user data.
-- **User-Friendly**: Accessible for administrators with varying levels of PowerShell experience.
+- **Comprehensive License Reporting**: Generate detailed reports of all Microsoft 365 licenses assigned to users
+- **Cost Analysis**: Calculate and analyze licensing costs by user, department, and country (when pricing data is available)
+- **Dual-Assignment Detection**: Identify users with duplicate license assignments (both direct and group-based)
+- **Usage Analytics**: Track user sign-in activity and identify underutilized accounts
+- **Multiple Output Formats**: Export reports in both CSV and HTML formats with visual analytics
+- **Group-Based License Support**: Full visibility into both direct and group-based license assignments
+- **Service Plan Visibility**: View enabled and disabled service plans for each license
+- **Automated Data Collection**: Automatically retrieve SKU and service plan information from your tenant
 
 ## Prerequisites
 
-Before starting, ensure you have:
+Before using this tool, ensure you have the following:
 
-- PowerShell 5.0 or higher installed on your machine.
-- Administrative access to your Microsoft 365 tenant.
-- A CSV file with user information for license mapping. Follow the "Script for CSV Execution" section to generate this file if needed.
+- **PowerShell**: Version 5.1 or higher (PowerShell 7.x recommended)
+- **Microsoft Graph PowerShell SDK**: Version 2.0 or higher
+  ```powershell
+  Install-Module -Name Microsoft.Graph -Scope CurrentUser
+  ```
+- **Microsoft 365 Permissions**: An account with one of the following roles:
+  - Global Administrator
+  - Global Reader
+  - License Administrator
+  - User Administrator
+- **Microsoft Graph API Permissions**:
+  - `Directory.Read.All`
+  - `Directory.AccessAsUser.All` (for the main reporting script)
+  - `AuditLog.Read.All` (for sign-in activity data)
+- **Storage**: Writable access to `C:\temp\` directory (or modify script paths as needed)
+- **CSV Reference File**: Download the "Product names and service plan identifiers for licensing" CSV from [Microsoft's official documentation](https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference)
 
 ## Installation
 
-To use the Microsoft 365 Current License Mapper, clone this repository to your local machine:
+1. **Clone the Repository**:
+   ```powershell
+   git clone https://github.com/TychoLoke/microsoft-365-current-license-mapper.git
+   cd microsoft-365-current-license-mapper
+   ```
 
-```shell
-git clone https://github.com/TychoLoke/microsoft-365-current-license-mapper.git
-cd microsoft-365-current-license-mapper
-```
+2. **Install Microsoft Graph PowerShell SDK** (if not already installed):
+   ```powershell
+   Install-Module -Name Microsoft.Graph -Scope CurrentUser -Force
+   ```
+
+3. **Create Working Directory**:
+   ```powershell
+   New-Item -Path "C:\temp" -ItemType Directory -Force
+   ```
 
 ## Usage
 
-### Preparing Your CSV File
+### Step 1: Preparing Your CSV File
 
-This script requires a CSV file that contains product names and service plan identifiers for licensing, which can be downloaded from the Microsoft documentation. Here's how to prepare and use this file with the script:
+Before generating license reports, you need to create reference CSV files containing SKU and service plan information for your tenant.
 
-1. Download the "Product names and service plan identifiers for licensing" CSV file from [Microsoft's official documentation](https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference).
+1. **Download Microsoft's Reference CSV**:
+   - Navigate to [Microsoft's Licensing Service Plan Reference](https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference)
+   - Download the "Product names and service plan identifiers for licensing" CSV file
+   - Save it to `C:\temp\`
 
-2. Move the downloaded CSV file to a designated folder, for example, `C:\temp\`.
+2. **Run the CSV Preparation Script**:
+   ```powershell
+   .\MicrosoftLicenseMapperCSV.ps1
+   ```
 
-3. Ensure you have the Microsoft Graph PowerShell SDK installed and configured. If not, you can install it using PowerShellGet with the following command:
-    ```powershell
-    Install-Module -Name Microsoft.Graph -Scope CurrentUser
-    ```
+3. **What This Script Does**:
+   - Connects to Microsoft Graph with MFA support
+   - Imports the Microsoft reference CSV file
+   - Retrieves all SKUs currently used in your tenant
+   - Maps SKU IDs to friendly display names
+   - Generates two output files:
+     - `C:\temp\SkuDataComplete.csv` - SKU information with display names
+     - `C:\temp\ServicePlanDataComplete.csv` - Service plan information with friendly names
 
-4. Execute the `MicrosoftLicenseMapperCSV.ps1` script in PowerShell, which performs the following operations:
-    - Connects to the Microsoft Graph, specifying the tenant and profile to use. Add your tenant identifier to the `Connect-MgGraph` cmdlet in the script.
-    - Imports the product names and service plan identifiers from the CSV file you placed in `C:\temp\`.
-    - Selects all SKUs with friendly display names and all service plans with friendly display names.
-    - Retrieves all products used in your tenant and generates a CSV file (`SkuDataComplete.csv`) containing all product SKUs used in your tenant.
-    - Generates a list of all service plans used in SKUs in your tenant and exports this list to another CSV file (`ServicePlanDataComplete.csv`).
+4. **(Optional) Enhance the CSV Files**:
+   - Open the generated CSV files
+   - Add pricing information in a `Price` column (monthly cost per license)
+   - Add a `Currency` column (e.g., "USD", "EUR", "GBP")
+   - This enables cost analysis features in the main report
 
-To run the script, navigate to the directory containing `MicrosoftLicenseMapperCSV.ps1` and execute it:
+### Step 2: Generate License Reports
 
+After preparing your CSV files, you can now generate comprehensive license reports.
+
+1. **Verify Prerequisites**:
+   - Ensure `SkuDataComplete.csv` and `ServicePlanDataComplete.csv` exist in `C:\temp\`
+   - Confirm you have the required Microsoft Graph permissions
+
+2. **Run the License Mapping Script**:
+   ```powershell
+   .\MicrosoftLicenseMapper.ps1
+   ```
+
+3. **Authentication**:
+   - The script will prompt you to sign in to Microsoft Graph
+   - Use an account with appropriate administrative permissions
+   - Approve the requested permissions when prompted
+
+4. **Processing**:
+   - The script will process all licensed user accounts in your tenant
+   - Progress will be displayed for each user account
+   - Processing time depends on the number of licensed users
+
+## Configuration
+
+### Customizing File Paths
+
+By default, the scripts use `C:\temp\` for all input and output files. To use different paths, modify the following variables in each script:
+
+**In `MicrosoftLicenseMapperCSV.ps1`**:
 ```powershell
-.\MicrosoftLicenseMapperCSV.ps1
+$csvPath = "C:\temp\Product names and service plan identifiers for licensing.csv"
+$skuCsvPath = "C:\temp\SkuDataComplete.csv"
+$servicePlanCsvPath = "C:\Temp\ServicePlanDataComplete.csv"
 ```
 
-Follow any prompts or instructions that appear during the execution. The script will generate two CSV files in `C:\temp\`:
-- `SkuDataComplete.csv`: Contains SKU information for all products used in your tenant.
-- `ServicePlanDataComplete.csv`: Contains service plan information for all SKUs used in your tenant.
+**In `MicrosoftLicenseMapper.ps1`**:
+```powershell
+$SkuDataPath = "C:\temp\SkuDataComplete.csv"
+$ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv"
+$CSVOutputFile = "c:\temp\Microsoft365LicensesReport.CSV"
+$HtmlReportFile = "c:\temp\Microsoft365LicensesReport.html"
+```
 
-These files can then be edited to add additional display name information and used to generate a comprehensive licensing report for your Microsoft 365 tenant.
+### Adding Pricing Information
 
-### Mapping Licenses with `MicrosoftLicenseMapper.ps1`
+To enable cost analysis features:
 
-After preparing your CSV files as described in the previous sections, you're ready to create a comprehensive report of licenses assigned to Azure AD user accounts using the Microsoft Graph PowerShell SDK cmdlets. Here’s how you can use the `MicrosoftLicenseMapper.ps1` script:
+1. Open `C:\temp\SkuDataComplete.csv` in Excel or a text editor
+2. Add a column named `Price` with the monthly cost per license (in decimal format, e.g., "12.50")
+3. Add a column named `Currency` with your currency code (e.g., "USD", "EUR", "GBP")
+4. Save the file
 
-1. **Prepare the Environment**: Ensure you have the Microsoft Graph PowerShell SDK installed and your CSV files (`SkuDataComplete.csv` and `ServicePlanDataComplete.csv`) ready in `C:\temp\`.
+## Output Files
 
-2. **Execute the Script**: Run the license mapping script with the prepared CSV files. Open PowerShell and navigate to the directory containing `MicrosoftLicenseMapper.ps1`, then execute the script:
+### CSV Report (`Microsoft365LicensesReport.CSV`)
 
-    ```powershell
-    .\MicrosoftLicenseMapper.ps1
-    ```
+Contains detailed information for each licensed user:
+- User display name and UPN
+- Country and department
+- Job title and company
+- Direct assigned licenses
+- Disabled service plans
+- Group-based licenses
+- Annual license costs (if pricing enabled)
+- Last license change date
+- Account creation date
+- Last sign-in information
+- Inactive account warnings
+- Duplicate license warnings
 
-3. **Follow On-screen Instructions**: The script will connect to the Microsoft Graph and begin processing the license data for users in your tenant. Follow any additional prompts or instructions that appear.
+### HTML Report (`Microsoft365LicensesReport.html`)
 
-4. **Review the Reports**: Upon completion, the script will generate two reports:
-   - A CSV file (`Microsoft365LicensesReport.CSV`) containing detailed license assignment information.
-   - An HTML file (`Microsoft365LicensesReport.html`) that provides a visual summary of license usage, costs (if pricing information is available), and other analytics.
+Visual report with the following sections:
+- **User License Summary**: Complete list of all licensed users with detailed information
+- **Product License Distribution**: SKU usage and costs by product
+- **Licensing Cost Analysis**: Total costs, average cost per user, utilization percentage
+- **License Costs by Country**: Breakdown of costs by geographic location
+- **License Costs by Department**: Breakdown of costs by organizational department
 
-5. **Post-Execution Steps**:
-   - Review the generated reports located in `C:\temp\` to analyze the license distribution and costs in your Microsoft 365 tenant.
-   - For detailed analysis, the HTML report provides breakdowns by department and country, including underused accounts and potential cost savings.
+Key metrics included:
+- Number of licensed accounts
+- Number of underused accounts
+- Percentage of underused accounts
+- Duplicate license detection
+- License assignment errors
 
-### Notes
+## Troubleshooting
 
-- **Customization**: Before running the script, you may need to customize the CSV file paths or add your tenant identifier to the `Connect-MgGraph` cmdlet as instructed within the script comments.
-- **Security**: Ensure you run this script in a secure environment, and review the permissions required for the Microsoft Graph SDK cmdlets used in the script.
-- **Testing**: Always test scripts in a non-production environment before running them on your live tenant data to prevent unintended consequences.
+### Common Issues
 
-Remember, this script offers valuable insights into your Microsoft 365 license usage and can help in optimizing license allocations and reducing costs. Follow the setup and execution steps carefully to ensure accurate reporting.
+**Issue**: "Can't find the product data file"
+- **Solution**: Ensure you've run `MicrosoftLicenseMapperCSV.ps1` first to generate the required CSV files
+
+**Issue**: "Failed to connect to Microsoft Graph"
+- **Solution**: Verify your credentials and ensure MFA is properly configured
+- Check that you have the required administrative roles
+
+**Issue**: "Insufficient privileges to complete the operation"
+- **Solution**: Ensure your account has one of the required roles (Global Administrator, Global Reader, License Administrator, or User Administrator)
+
+**Issue**: Pricing information not showing in reports
+- **Solution**: Add `Price` and `Currency` columns to `SkuDataComplete.csv` as described in the Configuration section
+
+**Issue**: Script execution is disabled
+- **Solution**: Run PowerShell as Administrator and execute:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
+
+### Best Practices
+
+- **Test First**: Always run scripts in a test environment before production use
+- **Regular Backups**: Keep backups of your CSV files after customization
+- **Schedule Reports**: Consider scheduling monthly reports to track license usage trends
+- **Review Inactive Accounts**: Regularly review accounts flagged as underused to optimize costs
+- **Audit Duplicates**: Investigate and resolve duplicate license assignments
+- **Update Reference Data**: Periodically re-download Microsoft's reference CSV to ensure accuracy
 
 
 ## Contributing
 
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are welcome and greatly appreciated! This project benefits from community feedback and enhancements.
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement". Don't forget to give the project a star! Thanks again!
+### How to Contribute
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. **Fork the Repository**
+   ```bash
+   git clone https://github.com/TychoLoke/microsoft-365-current-license-mapper.git
+   ```
+
+2. **Create a Feature Branch**
+   ```bash
+   git checkout -b feature/YourFeatureName
+   ```
+
+3. **Make Your Changes**
+   - Follow PowerShell best practices
+   - Add comments for complex logic
+   - Test thoroughly before committing
+
+4. **Commit Your Changes**
+   ```bash
+   git commit -m "Add: Brief description of your changes"
+   ```
+
+5. **Push to Your Fork**
+   ```bash
+   git push origin feature/YourFeatureName
+   ```
+
+6. **Open a Pull Request**
+   - Provide a clear description of the changes
+   - Reference any related issues
+   - Include testing details
+
+### Reporting Issues
+
+If you encounter bugs or have feature requests:
+- Open an issue on GitHub
+- Use descriptive titles
+- Include reproduction steps for bugs
+- Provide environment details (PowerShell version, OS, etc.)
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for full details.
+
+## Author
+
+**Tycho Loke**
+- Website: [https://currentcloud.net](https://currentcloud.net)
+- Blog: [https://tycholoke.com](https://tycholoke.com)
+- GitHub: [@TychoLoke](https://github.com/TychoLoke)
+
+---
+
+## Disclaimer
+
+This tool is provided as-is for informational and administrative purposes. Always test scripts in a non-production environment before deploying to production. The author and contributors are not responsible for any data loss or issues arising from the use of this tool.
+
+## Acknowledgments
+
+- Microsoft Graph PowerShell SDK team
+- Microsoft 365 community
+- Contributors and users providing feedback
+
+---
+
+**Note**: This is an independent project and is not officially affiliated with or endorsed by Microsoft Corporation.
