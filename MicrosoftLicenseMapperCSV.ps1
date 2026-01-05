@@ -59,17 +59,66 @@ Write-Host "Checking for Microsoft Graph PowerShell module..." -ForegroundColor 
 if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
     Write-Host "Microsoft Graph module not found. Installing..." -ForegroundColor Yellow
     try {
-        Install-Module Microsoft.Graph -Scope CurrentUser -Force -AllowClobber
+        Install-Module Microsoft.Graph -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
         Write-Host "Microsoft Graph module installed successfully!" -ForegroundColor Green
     } catch {
         Write-Host "Error: Failed to install Microsoft Graph module." -ForegroundColor Red
-        Write-Host "Please install manually: Install-Module Microsoft.Graph -Scope CurrentUser" -ForegroundColor Yellow
+        Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host ""
+
+        # Check if this is an execution policy issue
+        if ($_.Exception.Message -match "not digitally signed" -or $_.Exception.Message -match "execution policy") {
+            Write-Host "This appears to be a PowerShell execution policy issue." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "To resolve this, run PowerShell as Administrator and execute:" -ForegroundColor Cyan
+            Write-Host "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -ForegroundColor White
+            Write-Host ""
+            Write-Host "Alternatively, install the module manually:" -ForegroundColor Cyan
+            Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
+        } else {
+            Write-Host "Please install manually: Install-Module Microsoft.Graph -Scope CurrentUser" -ForegroundColor Yellow
+        }
+
+        Write-Host ""
         Read-Host "Press Enter to exit"
         Exit
     }
 } else {
     Write-Host "Microsoft Graph module found!" -ForegroundColor Green
 }
+
+# Import the required Microsoft Graph modules
+Write-Host "Loading Microsoft Graph modules..." -ForegroundColor Yellow
+try {
+    Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
+    Import-Module Microsoft.Graph.Identity.DirectoryManagement -ErrorAction Stop
+    Write-Host "Microsoft Graph modules loaded successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "Error: Failed to load Microsoft Graph modules." -ForegroundColor Red
+    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "The module may not be properly installed. Please try:" -ForegroundColor Yellow
+    Write-Host "  Uninstall-Module Microsoft.Graph -AllVersions" -ForegroundColor White
+    Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+    Exit
+}
+
+# Verify that the required cmdlets are available
+Write-Host "Verifying required cmdlets..." -ForegroundColor Yellow
+if (-not (Get-Command Get-MgSubscribedSku -ErrorAction SilentlyContinue)) {
+    Write-Host "Error: Get-MgSubscribedSku cmdlet is not available." -ForegroundColor Red
+    Write-Host "The Microsoft Graph module may not be properly installed." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Please reinstall the module:" -ForegroundColor Yellow
+    Write-Host "  Uninstall-Module Microsoft.Graph -AllVersions" -ForegroundColor White
+    Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+    Exit
+}
+Write-Host "All required cmdlets are available!" -ForegroundColor Green
 
 Write-Host ""
 
