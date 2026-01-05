@@ -728,6 +728,48 @@ $HtmlHead = @"
             text-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
+        .header .brought-by {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        .header .brought-by a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .header .brought-by a:hover {
+            opacity: 0.8;
+            border-bottom-color: #fff;
+        }
+
+        .header .kofi-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 94, 77, 0.9);
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-left: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header .kofi-link:hover {
+            background: rgba(255, 94, 77, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
         /* Toolbar */
         .toolbar {
             background: var(--card-bg);
@@ -1222,6 +1264,16 @@ $HtmlHead = @"
             <h1><i class="fas fa-chart-line"></i> Microsoft 365 License Report</h1>
             <h2>$OrgName</h2>
             <h3><i class="far fa-clock"></i> Generated: $RunDate</h3>
+            <div class="brought-by">
+                <i class="fas fa-code"></i> Brought to you by <a href="https://tycholoke.com" target="_blank">Tycho Löke</a> from <a href="https://tycholoke.com" target="_blank">tycholoke.com</a>
+                <br>
+                <span style="font-size: 13px; margin-top: 8px; display: inline-block;">
+                    Want to support Tycho?
+                    <a href="https://ko-fi.com/tycholoke" target="_blank" class="kofi-link">
+                        <i class="fas fa-heart"></i> Support on Ko-fi
+                    </a>
+                </span>
+            </div>
         </div>
 
         <div class="toolbar">
