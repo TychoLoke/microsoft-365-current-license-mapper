@@ -31,10 +31,11 @@
     Author: Tycho Loke
     Website: https://currentcloud.net
     Blog: https://tycholoke.com
-    Version: 1.8
-    Updated: 27/03/2024
+    Version: 2.0
+    Updated: 05/01/2026
 
     Requires:
+    - PowerShell 7.0 or higher
     - Microsoft.Graph PowerShell module
     - Appropriate Microsoft 365 admin permissions
     - Pre-generated SKU and Service Plan CSV files (run MicrosoftLicenseMapperCSV.ps1 first)
@@ -43,6 +44,29 @@
     https://github.com/TychoLoke/microsoft-365-current-license-mapper
 #>
 
+#requires -Version 7.0
+
+#region PowerShell Version Check
+
+# Verify PowerShell 7.0 or higher
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host "===============================================" -ForegroundColor Red
+    Write-Host "   PowerShell Version Error" -ForegroundColor Red
+    Write-Host "===============================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "This script requires PowerShell 7.0 or higher." -ForegroundColor Yellow
+    Write-Host "Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Please download and install PowerShell 7 from:" -ForegroundColor Cyan
+    Write-Host "https://github.com/PowerShell/PowerShell/releases" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Or install via command:" -ForegroundColor Cyan
+    Write-Host "  winget install Microsoft.PowerShell" -ForegroundColor White
+    Write-Host ""
+    Exit 1
+}
+
+#endregion
 
 Function Get-LicenseCosts {
   <#
@@ -93,7 +117,7 @@ Function Get-LicenseCosts {
 
 # Script metadata
 [datetime]$RunDate = Get-Date -format "dd-MMM-yyyy HH:mm:ss"
-$Version = "1.8"
+$Version = "2.0"
 
 # Default currency (can be overridden by Currency column in SkuDataComplete.csv)
 [string]$Currency = "EUR"
