@@ -1955,7 +1955,7 @@ $ScriptBlock = @"
                 });
             }
 
-"@</invoke>
+"@
 
 # Add department and country charts if pricing is available
 If ($PricingInfoAvailable) {
