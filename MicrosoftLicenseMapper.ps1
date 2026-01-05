@@ -494,13 +494,16 @@ ForEach ($License in $UserLicenses) {
 $UnderusedAccounts = $Report | Where-Object { $_.Status -ne "OK" }
 $PercentUnderusedAccounts = ($UnderUsedAccounts.Count / $Report.Count).toString("P")
 
-# Enhanced cleanup statistics
+# Enhanced cleanup statistics - Fixed to be cumulative
 $NeverLoggedIn = $Report | Where-Object { $_.'Last Signin' -eq "Never" }
 $Inactive180Plus = $Report | Where-Object { $_.Status -like "*180+ days*" }
-$Inactive90Plus = $Report | Where-Object { $_.Status -like "*90+ days*" }
-$Inactive60Plus = $Report | Where-Object { $_.Status -like "*60+ days*" }
-$Inactive30Plus = $Report | Where-Object { $_.Status -like "*30+ days*" }
-$HighPriorityCleanup = $Report | Where-Object { $_.Status -like "*Cleanup candidate*" -or $_.Status -like "*High priority*" }
+# Inactive 90+ includes both 90-179 days AND 180+ days
+$Inactive90Plus = $Report | Where-Object { $_.Status -like "*90+ days*" -or $_.Status -like "*180+ days*" }
+# Inactive 60+ includes 60-89 days AND 90+ days AND 180+ days
+$Inactive60Plus = $Report | Where-Object { $_.Status -like "*60+ days*" -or $_.Status -like "*90+ days*" -or $_.Status -like "*180+ days*" }
+# Inactive 30+ includes all inactive categories
+$Inactive30Plus = $Report | Where-Object { $_.Status -like "*30+ days*" -or $_.Status -like "*60+ days*" -or $_.Status -like "*90+ days*" -or $_.Status -like "*180+ days*" }
+$HighPriorityCleanup = $Report | Where-Object { $_.Status -like "*Cleanup candidate*" -or $_.Status -like "*High priority*" -or $_.'Last Signin' -eq "Never" }
 
 # This code grabs the SKU summary for the tenant and uses the data to create a SKU summary usage segment for the HTML report
 $SkuReport = [System.Collections.Generic.List[Object]]::new()
@@ -655,6 +658,10 @@ $HtmlHead = @"
             --accent-orange: #fb923c;
             --accent-teal: #2dd4bf;
             --accent-pink: #f472b6;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -845,6 +852,16 @@ $HtmlHead = @"
 
         .btn-secondary:hover {
             background: var(--light-bg);
+            transform: translateY(-1px);
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
+        }
+
+        .filter-btn:active {
+            transform: translateY(0) !important;
         }
 
         .theme-toggle {
@@ -1111,9 +1128,18 @@ $HtmlHead = @"
             transition: all 0.2s;
         }
 
+        tbody tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="dark"] tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
         tbody tr:hover {
-            background: var(--light-bg);
-            transform: scale(1.01);
+            background: var(--light-bg) !important;
+            transform: scale(1.005);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
         tbody tr.hidden {
@@ -1294,33 +1320,42 @@ $HtmlHead = @"
             </div>
         </div>
 
-        <!-- Cleanup Filters Section -->
-        <div class="toolbar" style="background: var(--light-bg); border-top: none; padding-top: 10px; padding-bottom: 10px;">
+        <!-- Enhanced Cleanup Filters Section -->
+        <div class="toolbar" style="background: linear-gradient(135deg, var(--light-bg) 0%, var(--card-bg) 100%); border-top: none; padding: 15px 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <span style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
-                    <i class="fas fa-filter"></i> Quick Cleanup Filters:
+                <span style="font-weight: 700; color: var(--text-primary); font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-filter"></i> Smart Cleanup Filters
+                    <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary); margin-left: 4px;">(Click to filter accounts)</span>
                 </span>
-                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="applyFilter('all')">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; transition: all 0.3s ease;" onclick="applyFilter('all')">
                     <i class="fas fa-list"></i> Show All
                 </button>
-                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(209, 52, 56, 0.1); color: var(--danger-color); border-color: var(--danger-color);" onclick="applyFilter('never')">
-                    <i class="fas fa-user-slash"></i> Never Logged In
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(209, 52, 56, 0.15); color: var(--danger-color); border-color: var(--danger-color); transition: all 0.3s ease;" onclick="applyFilter('never')">
+                    <i class="fas fa-user-slash"></i> Never Logged In <span style="background: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($NeverLoggedIn.Count)</span>
                 </button>
-                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(209, 52, 56, 0.1); color: var(--danger-color); border-color: var(--danger-color);" onclick="applyFilter('cleanup')">
-                    <i class="fas fa-exclamation-circle"></i> High Priority Cleanup
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(209, 52, 56, 0.15); color: var(--danger-color); border-color: var(--danger-color); transition: all 0.3s ease;" onclick="applyFilter('cleanup')">
+                    <i class="fas fa-exclamation-circle"></i> High Priority <span style="background: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($HighPriorityCleanup.Count)</span>
                 </button>
-                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(255, 185, 0, 0.1); color: var(--warning-color); border-color: var(--warning-color);" onclick="applyFilter('60days')">
-                    <i class="fas fa-clock"></i> Inactive 60+ Days
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(251, 191, 36, 0.15); color: var(--warning-color); border-color: var(--warning-color); transition: all 0.3s ease;" onclick="applyFilter('30days')">
+                    <i class="fas fa-calendar"></i> 30+ Days <span style="background: var(--warning-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive30Plus.Count)</span>
                 </button>
-                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(255, 185, 0, 0.1); color: var(--warning-color); border-color: var(--warning-color);" onclick="applyFilter('90days')">
-                    <i class="fas fa-history"></i> Inactive 90+ Days
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(251, 146, 60, 0.15); color: var(--accent-orange); border-color: var(--accent-orange); transition: all 0.3s ease;" onclick="applyFilter('60days')">
+                    <i class="fas fa-clock"></i> 60+ Days <span style="background: var(--accent-orange); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive60Plus.Count)</span>
                 </button>
-                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(209, 52, 56, 0.1); color: var(--danger-color); border-color: var(--danger-color);" onclick="applyFilter('duplicates')">
-                    <i class="fas fa-copy"></i> Duplicate Licenses
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: #ef4444; transition: all 0.3s ease;" onclick="applyFilter('90days')">
+                    <i class="fas fa-history"></i> 90+ Days <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive90Plus.Count)</span>
+                </button>
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(220, 38, 38, 0.15); color: #dc2626; border-color: #dc2626; transition: all 0.3s ease;" onclick="applyFilter('180days')">
+                    <i class="fas fa-ban"></i> 180+ Days <span style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive180Plus.Count)</span>
+                </button>
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border-color: var(--accent-purple); transition: all 0.3s ease;" onclick="applyFilter('duplicates')">
+                    <i class="fas fa-copy"></i> Duplicates <span style="background: var(--accent-purple); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$DuplicateSKUsAccounts</span>
                 </button>
             </div>
-            <div id="filterStatus" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
-                <i class="fas fa-info-circle"></i> Showing all <span id="filteredCount">$($Report.Count)</span> accounts
+            <div id="filterStatus" style="font-size: 13px; color: var(--text-secondary); margin-top: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-info-circle"></i> <span id="filterStatusText">Showing all <span id="filteredCount" style="font-weight: 700; color: var(--primary-color);">$($Report.Count)</span> accounts</span>
             </div>
         </div>
 "@
@@ -1349,11 +1384,26 @@ $DashboardHTML = @"
                 <div class="subtitle">Never used or 90+ days inactive</div>
             </div>
             <div class="stat-card warning">
+                <div class="label"><i class="fas fa-calendar"></i> Inactive 30+ Days</div>
+                <div class="value">$($Inactive30Plus.Count)</div>
+                <div class="subtitle">Requires monitoring</div>
+            </div>
+            <div class="stat-card warning">
                 <div class="label"><i class="fas fa-clock"></i> Inactive 60+ Days</div>
                 <div class="value">$($Inactive60Plus.Count)</div>
                 <div class="subtitle">Review recommended</div>
             </div>
             <div class="stat-card danger">
+                <div class="label"><i class="fas fa-history"></i> Inactive 90+ Days</div>
+                <div class="value">$($Inactive90Plus.Count)</div>
+                <div class="subtitle">Cleanup candidates</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="label"><i class="fas fa-ban"></i> Inactive 180+ Days</div>
+                <div class="value">$($Inactive180Plus.Count)</div>
+                <div class="subtitle">Critical - immediate action</div>
+            </div>
+            <div class="stat-card info">
                 <div class="label"><i class="fas fa-exclamation-triangle"></i> Duplicate Licenses</div>
                 <div class="value">$DuplicateSKULicenses</div>
                 <div class="subtitle">$DuplicateSKUsAccounts accounts affected</div>
@@ -1393,7 +1443,7 @@ $DashboardHTML += @"
             <!-- Charts Section -->
             <div class="section">
                 <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-chart-pie"></i> Visual Analytics</h2>
+                    <h2 class="section-title"><i class="fas fa-chart-pie"></i> Visual Analytics Dashboard</h2>
                 </div>
                 <div class="charts-grid">
                     <div class="chart-container">
@@ -1403,6 +1453,14 @@ $DashboardHTML += @"
                     <div class="chart-container">
                         <div class="chart-title"><i class="fas fa-chart-bar"></i> Top 10 Licenses by Usage</div>
                         <canvas id="topLicensesChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title"><i class="fas fa-exclamation-triangle"></i> Account Status Distribution</div>
+                        <canvas id="accountStatusChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title"><i class="fas fa-clock"></i> Inactive Account Analysis</div>
+                        <canvas id="inactiveAccountsChart"></canvas>
                     </div>
 "@
 
@@ -1416,6 +1474,14 @@ If ($PricingInfoAvailable) {
                     <div class="chart-container">
                         <div class="chart-title"><i class="fas fa-globe"></i> License Costs by Country</div>
                         <canvas id="countryCostsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title"><i class="fas fa-dollar-sign"></i> Cost Utilization Overview</div>
+                        <canvas id="costUtilizationChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title"><i class="fas fa-money-bill-wave"></i> Top 10 Most Expensive Licenses</div>
+                        <canvas id="topCostlyLicensesChart"></canvas>
                     </div>
 "@
 }
@@ -1541,6 +1607,8 @@ $DeptChartLabels = ""
 $DeptChartValues = ""
 $CountryChartLabels = ""
 $CountryChartValues = ""
+$TopCostlyLicensesLabels = ""
+$TopCostlyLicensesValues = ""
 
 If ($PricingInfoAvailable) {
   $DeptChartLabels = ($DepartmentReport | ForEach-Object { """$($_.Department)""" }) -join ","
@@ -1552,6 +1620,11 @@ If ($PricingInfoAvailable) {
   $CountryChartValues = ($CountryReport | ForEach-Object {
     [float]($_.Costs -replace '[^\d.]', '')
   }) -join ","
+
+  # Prepare top 10 most expensive licenses data
+  $TopCostlyLicenses = $SkuReport | Select-Object -First 10 "SKU Name", "Annual license costs"
+  $TopCostlyLicensesLabels = ($TopCostlyLicenses | ForEach-Object { """$($_.'SKU Name')""" }) -join ","
+  $TopCostlyLicensesValues = ($TopCostlyLicenses | ForEach-Object { $_.'Annual license costs' }) -join ","
 }
 
 # Add comprehensive JavaScript with all features
@@ -1763,7 +1836,126 @@ $ScriptBlock = @"
                 });
             }
 
-"@
+            // Account Status Distribution Chart
+            const accountStatusCtx = document.getElementById('accountStatusChart');
+            if (accountStatusCtx) {
+                window.chartInstances.accountStatus = new Chart(accountStatusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Active (OK)', 'Underused', 'Never Logged In', 'High Priority Cleanup'],
+                        datasets: [{
+                            data: [
+                                $($Report.Count - $UnderUsedAccounts.Count),
+                                $($UnderUsedAccounts.Count - $HighPriorityCleanup.Count),
+                                $($NeverLoggedIn.Count),
+                                $($HighPriorityCleanup.Count - $NeverLoggedIn.Count)
+                            ],
+                            backgroundColor: [
+                                'rgba(52, 211, 153, 0.9)',    // Green for OK
+                                'rgba(251, 191, 36, 0.9)',     // Amber for Underused
+                                'rgba(248, 113, 113, 0.9)',    // Red for Never Logged In
+                                'rgba(251, 146, 60, 0.9)'      // Orange for High Priority
+                            ],
+                            borderWidth: 3,
+                            borderColor: theme === 'dark' ? '#2d2d2d' : '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor,
+                                    boxWidth: 15,
+                                    padding: 12,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return label + ': ' + value + ' accounts (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Inactive Account Analysis Chart
+            const inactiveAccountsCtx = document.getElementById('inactiveAccountsChart');
+            if (inactiveAccountsCtx) {
+                window.chartInstances.inactiveAccounts = new Chart(inactiveAccountsCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Never Logged', '30+ Days', '60+ Days', '90+ Days', '180+ Days'],
+                        datasets: [{
+                            label: 'Number of Accounts',
+                            data: [
+                                $($NeverLoggedIn.Count),
+                                $($Inactive30Plus.Count),
+                                $($Inactive60Plus.Count),
+                                $($Inactive90Plus.Count),
+                                $($Inactive180Plus.Count)
+                            ],
+                            backgroundColor: [
+                                'rgba(248, 113, 113, 0.9)',    // Red
+                                'rgba(251, 191, 36, 0.9)',     // Amber
+                                'rgba(251, 146, 60, 0.9)',     // Orange
+                                'rgba(239, 68, 68, 0.9)',      // Dark Red
+                                'rgba(220, 38, 38, 0.9)'       // Darker Red
+                            ],
+                            borderColor: [
+                                'rgba(248, 113, 113, 1)',
+                                'rgba(251, 191, 36, 1)',
+                                'rgba(251, 146, 60, 1)',
+                                'rgba(239, 68, 68, 1)',
+                                'rgba(220, 38, 38, 1)'
+                            ],
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Accounts: ' + context.parsed.y;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: textColor },
+                                grid: { display: false }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: textColor,
+                                    stepSize: 1
+                                },
+                                grid: { color: gridColor }
+                            }
+                        }
+                    }
+                });
+            }
+
+"@</invoke>
 
 # Add department and country charts if pricing is available
 If ($PricingInfoAvailable) {
@@ -1866,6 +2058,112 @@ If ($PricingInfoAvailable) {
                                     }
                                 },
                                 grid: { color: gridColor }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Cost Utilization Overview Chart (Doughnut)
+            const costUtilizationCtx = document.getElementById('costUtilizationChart');
+            if (costUtilizationCtx) {
+                const totalCost = $TotalBoughtLicenseCosts;
+                const assignedCost = $TotalUserLicenseCosts;
+                const unusedCost = totalCost - assignedCost;
+
+                window.chartInstances.costUtilization = new Chart(costUtilizationCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Assigned Licenses', 'Unused Capacity'],
+                        datasets: [{
+                            data: [assignedCost, unusedCost],
+                            backgroundColor: [
+                                'rgba(52, 211, 153, 0.9)',    // Green for Assigned
+                                'rgba(248, 113, 113, 0.9)'     // Red for Unused
+                            ],
+                            borderWidth: 3,
+                            borderColor: theme === 'dark' ? '#2d2d2d' : '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor,
+                                    boxWidth: 15,
+                                    padding: 12,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return label + ': $Currency ' + value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Top 10 Most Expensive Licenses Chart
+            const topCostlyLicensesCtx = document.getElementById('topCostlyLicensesChart');
+            if (topCostlyLicensesCtx) {
+                const costlyLicenseColors = [$TopCostlyLicensesValues].map((_, i) => colors[i % colors.length]);
+
+                window.chartInstances.topCostlyLicenses = new Chart(topCostlyLicensesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [$TopCostlyLicensesLabels],
+                        datasets: [{
+                            label: 'Annual Cost ($Currency)',
+                            data: [$TopCostlyLicensesValues],
+                            backgroundColor: costlyLicenseColors,
+                            borderColor: costlyLicenseColors.map(c => c.replace('0.9)', '1)')),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '$Currency ' + context.parsed.x.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: textColor,
+                                    callback: function(value) {
+                                        return '$Currency ' + value.toLocaleString();
+                                    }
+                                },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                ticks: {
+                                    color: textColor,
+                                    font: { size: 10 }
+                                },
+                                grid: { display: false }
                             }
                         }
                     }
@@ -2057,6 +2355,13 @@ $ScriptBlock += @"
                                   statusText.includes('Never logged in');
                         filterDescription = 'high priority cleanup candidates';
                         break;
+                    case '30days':
+                        showRow = statusText.includes('30+ days') ||
+                                  statusText.includes('60+ days') ||
+                                  statusText.includes('90+ days') ||
+                                  statusText.includes('180+ days');
+                        filterDescription = 'accounts inactive 30+ days';
+                        break;
                     case '60days':
                         showRow = statusText.includes('60+ days') ||
                                   statusText.includes('90+ days') ||
@@ -2067,6 +2372,10 @@ $ScriptBlock += @"
                         showRow = statusText.includes('90+ days') ||
                                   statusText.includes('180+ days');
                         filterDescription = 'accounts inactive 90+ days';
+                        break;
+                    case '180days':
+                        showRow = statusText.includes('180+ days');
+                        filterDescription = 'accounts inactive 180+ days';
                         break;
                     case 'duplicates':
                         showRow = duplicatesText.includes('Warning: Duplicate');
@@ -2082,19 +2391,26 @@ $ScriptBlock += @"
                 }
             });
 
-            // Update filter status
+            // Update filter status with enhanced styling
             const filterStatus = document.getElementById('filterStatus');
+            const filterStatusText = document.getElementById('filterStatusText');
             const filteredCount = document.getElementById('filteredCount');
 
             if (filteredCount) {
                 filteredCount.textContent = visibleCount;
             }
 
-            if (filterStatus) {
+            if (filterStatusText) {
                 if (filterType === 'all') {
-                    filterStatus.innerHTML = '<i class="fas fa-info-circle"></i> Showing all <span id="filteredCount">' + visibleCount + '</span> accounts';
+                    filterStatusText.innerHTML = 'Showing all <span id="filteredCount" style="font-weight: 700; color: var(--primary-color);">' + visibleCount + '</span> accounts';
+                    if (filterStatus) {
+                        filterStatus.style.color = 'var(--text-secondary)';
+                    }
                 } else {
-                    filterStatus.innerHTML = '<i class="fas fa-filter"></i> Showing <span id="filteredCount">' + visibleCount + '</span> ' + filterDescription;
+                    filterStatusText.innerHTML = '<strong style="color: var(--primary-color);">Filter Active:</strong> Showing <span id="filteredCount" style="font-weight: 700; color: var(--primary-color);">' + visibleCount + '</span> ' + filterDescription;
+                    if (filterStatus) {
+                        filterStatus.style.color = 'var(--primary-color)';
+                    }
                 }
             }
 
@@ -2102,6 +2418,19 @@ $ScriptBlock += @"
             const userTableCount = document.getElementById('userTableCount');
             if (userTableCount) {
                 userTableCount.textContent = visibleCount;
+            }
+
+            // Highlight active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.style.transform = 'scale(1)';
+                btn.style.boxShadow = 'none';
+            });
+            if (filterType !== 'all') {
+                const activeBtn = event?.target?.closest('button');
+                if (activeBtn) {
+                    activeBtn.style.transform = 'scale(1.05)';
+                    activeBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                }
             }
         }
 
