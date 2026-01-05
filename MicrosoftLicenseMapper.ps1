@@ -605,36 +605,56 @@ $HtmlHead = @"
 
         :root {
             --primary-color: #0078d4;
-            --success-color: #107c10;
-            --warning-color: #ffb900;
+            --primary-hover: #106ebe;
+            --success-color: #10893e;
+            --success-light: #dff6dd;
+            --warning-color: #ff8c00;
+            --warning-light: #fff4ce;
             --danger-color: #d13438;
-            --info-color: #00b7c3;
+            --danger-light: #fde7e9;
+            --info-color: #0099bc;
+            --info-light: #cff4fc;
             --dark-bg: #1e1e1e;
-            --light-bg: #f5f5f5;
+            --light-bg: #f8f9fa;
             --card-bg: #ffffff;
             --text-primary: #323130;
             --text-secondary: #605e5c;
-            --border-color: #edebe9;
-            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --border-color: #e1dfdd;
+            --shadow: 0 3px 12px rgba(0,0,0,0.12);
+            --shadow-hover: 0 6px 20px rgba(0,0,0,0.18);
             --header-gradient-start: #0078d4;
             --header-gradient-end: #005a9e;
+            --accent-purple: #8b5cf6;
+            --accent-orange: #ff6b35;
+            --accent-teal: #14b8a6;
+            --accent-pink: #ec4899;
         }
 
         [data-theme="dark"] {
-            --primary-color: #4da6ff;
-            --success-color: #6cc24a;
-            --warning-color: #ffdd87;
-            --danger-color: #ff6b6b;
-            --info-color: #4dd4e1;
-            --dark-bg: #121212;
-            --light-bg: #1e1e1e;
-            --card-bg: #2d2d2d;
-            --text-primary: #e8e8e8;
-            --text-secondary: #b3b3b3;
+            --primary-color: #60a5fa;
+            --primary-hover: #3b82f6;
+            --success-color: #34d399;
+            --success-light: rgba(52, 211, 153, 0.15);
+            --warning-color: #fbbf24;
+            --warning-light: rgba(251, 191, 36, 0.15);
+            --danger-color: #f87171;
+            --danger-light: rgba(248, 113, 113, 0.15);
+            --info-color: #22d3ee;
+            --info-light: rgba(34, 211, 238, 0.15);
+            --dark-bg: #0f0f0f;
+            --light-bg: #1a1a1a;
+            --card-bg: #262626;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a3a3a3;
             --border-color: #404040;
-            --shadow: 0 2px 12px rgba(0,0,0,0.5);
-            --header-gradient-start: #1a5490;
-            --header-gradient-end: #0d3a6e;
+            --shadow: 0 4px 16px rgba(0,0,0,0.6);
+            --shadow-hover: 0 8px 24px rgba(0,0,0,0.8);
+            --header-gradient-start: #1e40af;
+            --header-gradient-end: #1e3a8a;
+            --accent-purple: #a78bfa;
+            --accent-orange: #fb923c;
+            --accent-teal: #2dd4bf;
+            --accent-pink: #f472b6;
         }
 
         body {
@@ -657,33 +677,97 @@ $HtmlHead = @"
             transition: background 0.3s ease;
         }
 
-        /* Header Styles */
+        /* Header Styles with Banner Image */
         .header {
-            background: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
+            background-image: linear-gradient(rgba(0, 120, 212, 0.85), rgba(0, 90, 158, 0.90)), url('https://p1-ofp.static.pub/ShareResource/na/faqs/img/microsoft-Office-365-sub-hero-banner.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             color: white;
-            padding: 40px;
+            padding: 60px 40px;
             text-align: center;
             position: relative;
         }
 
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 120, 212, 0.75) 0%, rgba(0, 90, 158, 0.80) 100%);
+            z-index: 0;
+        }
+
+        .header > * {
+            position: relative;
+            z-index: 1;
+        }
+
         .header h1 {
-            font-size: 36px;
-            font-weight: 300;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            letter-spacing: -0.5px;
         }
 
         .header h2 {
-            font-size: 22px;
-            font-weight: 400;
-            opacity: 0.95;
-            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 500;
+            opacity: 1;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .header h3 {
+            font-size: 15px;
+            font-weight: 400;
+            opacity: 0.95;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .header .brought-by {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
             font-size: 14px;
-            font-weight: 300;
-            opacity: 0.85;
+            opacity: 0.95;
+        }
+
+        .header .brought-by a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .header .brought-by a:hover {
+            opacity: 0.8;
+            border-bottom-color: #fff;
+        }
+
+        .header .kofi-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 94, 77, 0.9);
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-left: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header .kofi-link:hover {
+            background: rgba(255, 94, 77, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
         }
 
         /* Toolbar */
@@ -795,11 +879,11 @@ $HtmlHead = @"
 
         .stat-card {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 24px;
+            border-radius: 16px;
+            padding: 28px;
             box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary-color);
-            transition: all 0.3s ease;
+            border-left: 5px solid var(--primary-color);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
@@ -807,27 +891,48 @@ $HtmlHead = @"
         .stat-card::before {
             content: '';
             position: absolute;
-            top: 0;
-            right: 0;
-            width: 100px;
-            height: 100px;
-            opacity: 0.05;
-            font-size: 80px;
-            font-family: 'Font Awesome 6 Free';
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, var(--primary-color) 0%, transparent 70%);
+            opacity: 0.08;
+            transition: all 0.4s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: var(--shadow-hover);
         }
 
-        .stat-card.success { border-left-color: var(--success-color); }
-        .stat-card.warning { border-left-color: var(--warning-color); }
-        .stat-card.danger { border-left-color: var(--danger-color); }
-        .stat-card.info { border-left-color: var(--info-color); }
+        .stat-card:hover::before {
+            opacity: 0.12;
+            transform: scale(1.2);
+        }
+
+        .stat-card.success {
+            border-left-color: var(--success-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--success-light) 100%);
+        }
+        .stat-card.success::before { background: radial-gradient(circle, var(--success-color) 0%, transparent 70%); }
+
+        .stat-card.warning {
+            border-left-color: var(--warning-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--warning-light) 100%);
+        }
+        .stat-card.warning::before { background: radial-gradient(circle, var(--warning-color) 0%, transparent 70%); }
+
+        .stat-card.danger {
+            border-left-color: var(--danger-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--danger-light) 100%);
+        }
+        .stat-card.danger::before { background: radial-gradient(circle, var(--danger-color) 0%, transparent 70%); }
+
+        .stat-card.info {
+            border-left-color: var(--info-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--info-light) 100%);
+        }
+        .stat-card.info::before { background: radial-gradient(circle, var(--info-color) 0%, transparent 70%); }
 
         .stat-card .label {
             font-size: 12px;
@@ -1159,6 +1264,16 @@ $HtmlHead = @"
             <h1><i class="fas fa-chart-line"></i> Microsoft 365 License Report</h1>
             <h2>$OrgName</h2>
             <h3><i class="far fa-clock"></i> Generated: $RunDate</h3>
+            <div class="brought-by">
+                <i class="fas fa-code"></i> Brought to you by <a href="https://tycholoke.com" target="_blank">Tycho Löke</a> from <a href="https://tycholoke.com" target="_blank">tycholoke.com</a>
+                <br>
+                <span style="font-size: 13px; margin-top: 8px; display: inline-block;">
+                    Want to support Tycho?
+                    <a href="https://ko-fi.com/tycholoke" target="_blank" class="kofi-link">
+                        <i class="fas fa-heart"></i> Support on Ko-fi
+                    </a>
+                </span>
+            </div>
         </div>
 
         <div class="toolbar">
@@ -1534,18 +1649,23 @@ $ScriptBlock = @"
             const textColor = theme === 'dark' ? '#e8e8e8' : '#323130';
             const gridColor = theme === 'dark' ? '#404040' : '#edebe9';
 
-            // Chart color palette
+            // Enhanced vibrant color palette
             const colors = [
-                'rgba(0, 120, 212, 0.8)',
-                'rgba(16, 124, 16, 0.8)',
-                'rgba(255, 185, 0, 0.8)',
-                'rgba(209, 52, 56, 0.8)',
-                'rgba(0, 183, 195, 0.8)',
-                'rgba(138, 43, 226, 0.8)',
-                'rgba(255, 140, 0, 0.8)',
-                'rgba(0, 128, 128, 0.8)',
-                'rgba(255, 20, 147, 0.8)',
-                'rgba(50, 205, 50, 0.8)'
+                'rgba(96, 165, 250, 0.9)',    // Bright Blue
+                'rgba(52, 211, 153, 0.9)',    // Emerald Green
+                'rgba(251, 191, 36, 0.9)',    // Amber
+                'rgba(248, 113, 113, 0.9)',   // Red
+                'rgba(34, 211, 238, 0.9)',    // Cyan
+                'rgba(167, 139, 250, 0.9)',   // Purple
+                'rgba(251, 146, 60, 0.9)',    // Orange
+                'rgba(45, 212, 191, 0.9)',    // Teal
+                'rgba(244, 114, 182, 0.9)',   // Pink
+                'rgba(132, 204, 22, 0.9)',    // Lime
+                'rgba(59, 130, 246, 0.9)',    // Blue
+                'rgba(236, 72, 153, 0.9)',    // Hot Pink
+                'rgba(139, 92, 246, 0.9)',    // Violet
+                'rgba(34, 197, 94, 0.9)',     // Green
+                'rgba(249, 115, 22, 0.9)'     // Deep Orange
             ];
 
             // License Distribution Pie Chart
@@ -1594,6 +1714,9 @@ $ScriptBlock = @"
             // Top 10 Licenses Bar Chart
             const topLicensesCtx = document.getElementById('topLicensesChart');
             if (topLicensesCtx) {
+                // Generate gradient colors for bars
+                const barColors = [$SkuChartValues].map((_, i) => colors[i % colors.length]);
+
                 window.chartInstances.topLicenses = new Chart(topLicensesCtx, {
                     type: 'bar',
                     data: {
@@ -1601,9 +1724,11 @@ $ScriptBlock = @"
                         datasets: [{
                             label: 'Units Used',
                             data: [$SkuChartValues],
-                            backgroundColor: 'rgba(0, 120, 212, 0.8)',
-                            borderColor: 'rgba(0, 120, 212, 1)',
-                            borderWidth: 2
+                            backgroundColor: barColors,
+                            borderColor: barColors.map(c => c.replace('0.9)', '1)')),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
                         }]
                     },
                     options: {
@@ -1646,6 +1771,8 @@ If ($PricingInfoAvailable) {
             // Department Costs Chart
             const deptCostsCtx = document.getElementById('departmentCostsChart');
             if (deptCostsCtx) {
+                const deptColors = [$DeptChartValues].map((_, i) => colors[i % colors.length]);
+
                 window.chartInstances.deptCosts = new Chart(deptCostsCtx, {
                     type: 'bar',
                     data: {
@@ -1653,9 +1780,11 @@ If ($PricingInfoAvailable) {
                         datasets: [{
                             label: 'Annual Costs ($Currency)',
                             data: [$DeptChartValues],
-                            backgroundColor: 'rgba(16, 124, 16, 0.8)',
-                            borderColor: 'rgba(16, 124, 16, 1)',
-                            borderWidth: 2
+                            backgroundColor: deptColors,
+                            borderColor: deptColors.map(c => c.replace('0.9)', '1)')),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
                         }]
                     },
                     options: {
@@ -1694,6 +1823,8 @@ If ($PricingInfoAvailable) {
             // Country Costs Chart
             const countryCostsCtx = document.getElementById('countryCostsChart');
             if (countryCostsCtx) {
+                const countryColors = [$CountryChartValues].map((_, i) => colors[i % colors.length]);
+
                 window.chartInstances.countryCosts = new Chart(countryCostsCtx, {
                     type: 'bar',
                     data: {
@@ -1701,9 +1832,11 @@ If ($PricingInfoAvailable) {
                         datasets: [{
                             label: 'Annual Costs ($Currency)',
                             data: [$CountryChartValues],
-                            backgroundColor: 'rgba(0, 183, 195, 0.8)',
-                            borderColor: 'rgba(0, 183, 195, 1)',
-                            borderWidth: 2
+                            backgroundColor: countryColors,
+                            borderColor: countryColors.map(c => c.replace('0.9)', '1)')),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
                         }]
                     },
                     options: {
@@ -1879,9 +2012,21 @@ $ScriptBlock += @"
             if (!userTable) return;
 
             const tbody = userTable.querySelector('tbody');
+            const thead = userTable.querySelector('thead');
             const rows = tbody.querySelectorAll('tr');
             let visibleCount = 0;
             let filterDescription = '';
+
+            // Find column indices by header text
+            const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent.trim().replace(/[↕↑↓]/g, '').trim());
+            const statusColIndex = headers.indexOf('Status');
+            const duplicatesColIndex = headers.indexOf('Duplicates detected');
+
+            // Verify we found the columns
+            if (statusColIndex === -1) {
+                console.error('Status column not found in table headers');
+                return;
+            }
 
             // Clear global search when applying a filter
             const globalSearch = document.getElementById('globalSearch');
@@ -1891,9 +2036,9 @@ $ScriptBlock += @"
                 const cells = row.querySelectorAll('td');
                 let showRow = false;
 
-                // Get the Status column (usually last column or second to last)
-                const statusCell = cells[cells.length - 2]; // Adjust if needed
-                const duplicatesCell = cells[cells.length - 3]; // Duplicates detected column
+                // Get the Status and Duplicates columns using the found indices
+                const statusCell = cells[statusColIndex];
+                const duplicatesCell = duplicatesColIndex !== -1 ? cells[duplicatesColIndex] : null;
                 const statusText = statusCell ? statusCell.textContent.trim() : '';
                 const duplicatesText = duplicatesCell ? duplicatesCell.textContent.trim() : '';
 
