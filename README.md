@@ -25,14 +25,16 @@ The Microsoft 365 Current License Mapper is a comprehensive PowerShell solution 
 
 ## Features
 
+- **Modern Interactive HTML Reports**: Beautiful, responsive web-based reports with sortable tables and dashboard cards
 - **Comprehensive License Reporting**: Generate detailed reports of all Microsoft 365 licenses assigned to users
 - **Cost Analysis**: Calculate and analyze licensing costs by user, department, and country (when pricing data is available)
 - **Dual-Assignment Detection**: Identify users with duplicate license assignments (both direct and group-based)
 - **Usage Analytics**: Track user sign-in activity and identify underutilized accounts
-- **Multiple Output Formats**: Export reports in both CSV and HTML formats with visual analytics
+- **Multiple Output Formats**: Export reports in both CSV and modern HTML formats with interactive features
 - **Group-Based License Support**: Full visibility into both direct and group-based license assignments
 - **Service Plan Visibility**: View enabled and disabled service plans for each license
 - **Automated Data Collection**: Automatically retrieve SKU and service plan information from your tenant
+- **Responsive Design**: HTML reports work seamlessly on desktop, tablet, and mobile devices
 
 ## Prerequisites
 
@@ -177,19 +179,36 @@ Contains detailed information for each licensed user:
 
 ### HTML Report (`Microsoft365LicensesReport.html`)
 
-Visual report with the following sections:
-- **User License Summary**: Complete list of all licensed users with detailed information
-- **Product License Distribution**: SKU usage and costs by product
-- **Licensing Cost Analysis**: Total costs, average cost per user, utilization percentage
-- **License Costs by Country**: Breakdown of costs by geographic location
-- **License Costs by Department**: Breakdown of costs by organizational department
+A modern, interactive web-based report featuring:
 
-Key metrics included:
-- Number of licensed accounts
-- Number of underused accounts
-- Percentage of underused accounts
-- Duplicate license detection
+**Dashboard Overview:**
+- Interactive summary cards displaying key metrics at a glance
+- Color-coded statistics (success, warning, danger, info)
+- Responsive grid layout adapting to screen sizes
+- Cost analysis cards (when pricing data is available)
+
+**Data Tables:**
+- **User License Details**: Complete list of all licensed users with sortable columns
+- **Product License Distribution**: SKU usage, costs, and utilization
+- **License Costs by Department**: Breakdown by organizational department
+- **License Costs by Country**: Breakdown by geographic location
+
+**Key Features:**
+- **Sortable Tables**: Click any column header to sort data ascending/descending
+- **Responsive Design**: Optimized for desktop, tablet, and mobile viewing
+- **Modern UI**: Microsoft Fluent-inspired design with gradient headers
+- **Hover Effects**: Interactive elements with smooth transitions
+- **Print-Friendly**: Optimized CSS for professional printing
+- **Sticky Headers**: Table headers remain visible while scrolling
+
+**Metrics Displayed:**
+- Total licensed accounts
+- Underused accounts (count and percentage)
+- Duplicate licenses detected
 - License assignment errors
+- Total licensing costs (when pricing enabled)
+- Average cost per user
+- License utilization percentage
 
 ## Troubleshooting
 
