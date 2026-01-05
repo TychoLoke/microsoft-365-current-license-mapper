@@ -1,6 +1,6 @@
 # Microsoft 365 Current License Mapper
 
-[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
+[![PowerShell](https://img.shields.io/badge/PowerShell-7.0%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ## Table of Contents
@@ -40,7 +40,17 @@ The Microsoft 365 Current License Mapper is a comprehensive PowerShell solution 
 
 Before using this tool, ensure you have the following:
 
-- **PowerShell**: Version 5.1 or higher (PowerShell 7.x recommended)
+- **PowerShell 7.0 or Higher**: This tool requires PowerShell 7.0+
+  - **Windows**: Download from [PowerShell GitHub Releases](https://github.com/PowerShell/PowerShell/releases) or install via:
+    ```powershell
+    winget install Microsoft.PowerShell
+    ```
+  - **macOS**: Install via Homebrew:
+    ```bash
+    brew install powershell/tap/powershell
+    ```
+  - **Linux**: Follow the [installation guide for your distribution](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-linux)
+  - **Verify Installation**: Check your version with `$PSVersionTable`
 - **Microsoft Graph PowerShell SDK**: Version 2.0 or higher
   ```powershell
   Install-Module -Name Microsoft.Graph -Scope CurrentUser
@@ -213,6 +223,17 @@ A modern, interactive web-based report featuring:
 ## Troubleshooting
 
 ### Common Issues
+
+**Issue**: "This script requires PowerShell 7.0 or higher"
+- **Solution**: You're running an older version of PowerShell (likely Windows PowerShell 5.1)
+- **Fix**: Install PowerShell 7+ using one of these methods:
+  - **Windows**: `winget install Microsoft.PowerShell` or download from [PowerShell releases](https://github.com/PowerShell/PowerShell/releases)
+  - **macOS**: `brew install powershell/tap/powershell`
+  - **Linux**: Follow the [Linux installation guide](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-linux)
+- After installation, run the scripts using `pwsh` instead of `powershell`:
+  ```powershell
+  pwsh .\MicrosoftLicenseMapperCSV.ps1
+  ```
 
 **Issue**: "Can't find the product data file"
 - **Solution**: Ensure you've run `MicrosoftLicenseMapperCSV.ps1` first to generate the required CSV files
