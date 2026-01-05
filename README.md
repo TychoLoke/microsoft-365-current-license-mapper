@@ -26,10 +26,16 @@ The Microsoft 365 Current License Mapper is a comprehensive PowerShell solution 
 ## Features
 
 - **Modern Interactive HTML Reports**: Beautiful, responsive web-based reports with sortable tables and dashboard cards
+- **Advanced Cleanup Filtering**: Quick filter presets for tenant cleanup scenarios:
+  - Never logged in accounts
+  - High priority cleanup candidates (never used or 90+ days inactive)
+  - Inactive accounts (30+, 60+, 90+, 180+ days)
+  - Duplicate license assignments
+  - Enhanced status categorization for better cleanup decision-making
 - **Comprehensive License Reporting**: Generate detailed reports of all Microsoft 365 licenses assigned to users
 - **Cost Analysis**: Calculate and analyze licensing costs by user, department, and country (when pricing data is available)
 - **Dual-Assignment Detection**: Identify users with duplicate license assignments (both direct and group-based)
-- **Usage Analytics**: Track user sign-in activity and identify underutilized accounts
+- **Usage Analytics**: Track user sign-in activity and identify underutilized accounts with granular inactivity levels
 - **Multiple Output Formats**: Export reports in both CSV and modern HTML formats with interactive features
 - **Group-Based License Support**: Full visibility into both direct and group-based license assignments
 - **Service Plan Visibility**: View enabled and disabled service plans for each license
@@ -169,6 +175,43 @@ To enable cost analysis features:
 3. Add a column named `Currency` with your currency code (e.g., "USD", "EUR", "GBP")
 4. Save the file
 
+## Tenant Cleanup Features
+
+The tool now includes powerful cleanup filtering capabilities to help you identify and manage underutilized licenses:
+
+### Cleanup Categories
+
+1. **Never Logged In Accounts** - Users who have never accessed their account
+   - Immediate cleanup candidates for license recovery
+   - Clear indicator in the Status column
+
+2. **High Priority Cleanup** - Accounts with critical inactivity
+   - Never logged in users
+   - Inactive for 90+ days
+   - Inactive for 180+ days
+
+3. **Inactive Account Tiers**
+   - **30+ days**: Monitor for potential issues
+   - **60+ days**: Review recommended
+   - **90+ days**: Cleanup candidate
+   - **180+ days**: High priority cleanup
+
+### Using Quick Filters
+
+The HTML report includes one-click filter buttons in the toolbar:
+- Click any filter button to instantly show only matching accounts
+- Filter status shows the count of filtered results
+- Click "Show All" to reset filters
+- Combine with the search box for advanced filtering
+
+### Recommended Cleanup Workflow
+
+1. **Start with "Never Logged In"** - These are safe cleanup candidates if confirmed
+2. **Review "High Priority Cleanup"** - Focus on accounts inactive 90+ days
+3. **Check "Inactive 60+ Days"** - Evaluate if licenses can be reassigned
+4. **Review "Duplicate Licenses"** - Eliminate wasteful duplicate assignments
+5. **Export filtered results** to CSV for documentation and approval processes
+
 ## Output Files
 
 ### CSV Report (`Microsoft365LicensesReport.CSV`)
@@ -214,11 +257,27 @@ A modern, interactive web-based report featuring:
 **Metrics Displayed:**
 - Total licensed accounts
 - Underused accounts (count and percentage)
+- Never logged in accounts
+- High priority cleanup candidates
+- Inactive accounts (60+ days, 90+ days, 180+ days)
 - Duplicate licenses detected
 - License assignment errors
 - Total licensing costs (when pricing enabled)
 - Average cost per user
 - License utilization percentage
+
+**Cleanup Filtering:**
+- **Quick Filter Buttons**: One-click filtering for common cleanup scenarios
+- **Never Logged In**: Identify accounts that have never been accessed
+- **High Priority Cleanup**: Accounts never used or inactive for 90+ days
+- **Inactive Filters**: Filter by 60+, 90+ days of inactivity
+- **Duplicate Licenses**: Find accounts with duplicate license assignments
+- **Smart Status Categories**: Enhanced status messages for better decision-making:
+  - "Never logged in - Cleanup candidate"
+  - "Inactive 180+ days - High priority cleanup"
+  - "Inactive 90+ days - Cleanup candidate"
+  - "Inactive 60+ days - Review recommended"
+  - "Inactive 30+ days - Monitor"
 
 ## Troubleshooting
 
@@ -314,10 +373,14 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Author
 
-**Tycho Loke**
-- Website: [https://currentcloud.net](https://currentcloud.net)
-- Blog: [https://tycholoke.com](https://tycholoke.com)
+**Tycho Löke**
+- Website: [https://tycholoke.com](https://tycholoke.com)
+- Portfolio: [https://currentcloud.net](https://currentcloud.net)
 - GitHub: [@TychoLoke](https://github.com/TychoLoke)
+
+**Copyright © 2026 Tycho Löke. All rights reserved.**
+
+This tool is copyrighted by Tycho Löke and available at [tycholoke.com](https://tycholoke.com). While licensed under MIT for use and modification, attribution to the original author must be maintained in all distributions and derivative works.
 
 ---
 
