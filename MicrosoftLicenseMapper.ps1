@@ -28,10 +28,11 @@
     Runs the script with default file paths
 
     .NOTES
-    Author: Tycho Loke
-    Website: https://currentcloud.net
-    Blog: https://tycholoke.com
-    Version: 2.0
+    Author: Tycho Löke
+    Copyright: (c) 2026 Tycho Löke. All rights reserved.
+    Website: https://tycholoke.com
+    Portfolio: https://currentcloud.net
+    Version: 2.1
     Updated: 05/01/2026
 
     Requires:
@@ -42,6 +43,12 @@
 
     .LINK
     https://github.com/TychoLoke/microsoft-365-current-license-mapper
+    https://tycholoke.com
+
+    .COPYRIGHT
+    Copyright (c) 2026 Tycho Löke (tycholoke.com). All rights reserved.
+    This script is provided as-is without warranty. Unauthorized redistribution
+    or modification without attribution is prohibited.
 #>
 
 #requires -Version 7.0
@@ -117,7 +124,7 @@ Function Get-LicenseCosts {
 
 # Script metadata
 [datetime]$RunDate = Get-Date -format "dd-MMM-yyyy HH:mm:ss"
-$Version = "2.0"
+$Version = "2.1"
 
 # Default currency (can be overridden by Currency column in SkuDataComplete.csv)
 [string]$Currency = "EUR"
@@ -395,9 +402,9 @@ ForEach ($License in $UserLicenses) {
   $LastNonInteractiveSignIn = $User.SignInActivity.LastNonInteractiveSignInDateTime
 
   If (-not $LastSignIn -and -not $LastNonInteractiveSignIn) {
-      $DaysSinceLastSignIn = "Unknown"
-      $UnusedAccountWarning = ("Unknown last sign-in for account")
-      $LastAccess = "Unknown"
+      $DaysSinceLastSignIn = "Never"
+      $UnusedAccountWarning = "Never logged in - Cleanup candidate"
+      $LastAccess = "Never"
   } Else {
     # Get the newest date, if both dates contain values
     If ($LastSignIn -and $LastNonInteractiveSignIn) {
@@ -416,8 +423,16 @@ ForEach ($License in $UserLicenses) {
 
     $DaysSinceLastSignIn = ($RunDate - $CompareDate).Days
     $LastAccess = Get-Date($CompareDate) -format g
-    If ($DaysSinceLastSignIn -gt 60) { 
-      $UnusedAccountWarning = ("Account unused for {0} days - check!" -f $DaysSinceLastSignIn) 
+
+    # Enhanced status categorization for cleanup scenarios
+    If ($DaysSinceLastSignIn -gt 180) {
+      $UnusedAccountWarning = "Inactive 180+ days - High priority cleanup"
+    } ElseIf ($DaysSinceLastSignIn -gt 90) {
+      $UnusedAccountWarning = "Inactive 90+ days - Cleanup candidate"
+    } ElseIf ($DaysSinceLastSignIn -gt 60) {
+      $UnusedAccountWarning = "Inactive 60+ days - Review recommended"
+    } ElseIf ($DaysSinceLastSignIn -gt 30) {
+      $UnusedAccountWarning = "Inactive 30+ days - Monitor"
     }
   }
 
@@ -478,6 +493,14 @@ ForEach ($License in $UserLicenses) {
 
 $UnderusedAccounts = $Report | Where-Object { $_.Status -ne "OK" }
 $PercentUnderusedAccounts = ($UnderUsedAccounts.Count / $Report.Count).toString("P")
+
+# Enhanced cleanup statistics
+$NeverLoggedIn = $Report | Where-Object { $_.'Last Signin' -eq "Never" }
+$Inactive180Plus = $Report | Where-Object { $_.Status -like "*180+ days*" }
+$Inactive90Plus = $Report | Where-Object { $_.Status -like "*90+ days*" }
+$Inactive60Plus = $Report | Where-Object { $_.Status -like "*60+ days*" }
+$Inactive30Plus = $Report | Where-Object { $_.Status -like "*30+ days*" }
+$HighPriorityCleanup = $Report | Where-Object { $_.Status -like "*Cleanup candidate*" -or $_.Status -like "*High priority*" }
 
 # This code grabs the SKU summary for the tenant and uses the data to create a SKU summary usage segment for the HTML report
 $SkuReport = [System.Collections.Generic.List[Object]]::new()
@@ -1155,6 +1178,36 @@ $HtmlHead = @"
                 </button>
             </div>
         </div>
+
+        <!-- Cleanup Filters Section -->
+        <div class="toolbar" style="background: var(--light-bg); border-top: none; padding-top: 10px; padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
+                    <i class="fas fa-filter"></i> Quick Cleanup Filters:
+                </span>
+                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="applyFilter('all')">
+                    <i class="fas fa-list"></i> Show All
+                </button>
+                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(209, 52, 56, 0.1); color: var(--danger-color); border-color: var(--danger-color);" onclick="applyFilter('never')">
+                    <i class="fas fa-user-slash"></i> Never Logged In
+                </button>
+                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(209, 52, 56, 0.1); color: var(--danger-color); border-color: var(--danger-color);" onclick="applyFilter('cleanup')">
+                    <i class="fas fa-exclamation-circle"></i> High Priority Cleanup
+                </button>
+                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(255, 185, 0, 0.1); color: var(--warning-color); border-color: var(--warning-color);" onclick="applyFilter('60days')">
+                    <i class="fas fa-clock"></i> Inactive 60+ Days
+                </button>
+                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(255, 185, 0, 0.1); color: var(--warning-color); border-color: var(--warning-color);" onclick="applyFilter('90days')">
+                    <i class="fas fa-history"></i> Inactive 90+ Days
+                </button>
+                <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; background: rgba(209, 52, 56, 0.1); color: var(--danger-color); border-color: var(--danger-color);" onclick="applyFilter('duplicates')">
+                    <i class="fas fa-copy"></i> Duplicate Licenses
+                </button>
+            </div>
+            <div id="filterStatus" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+                <i class="fas fa-info-circle"></i> Showing all <span id="filteredCount">$($Report.Count)</span> accounts
+            </div>
+        </div>
 "@
 
 # Build Dashboard Summary Cards with icons
@@ -1169,6 +1222,21 @@ $DashboardHTML = @"
                 <div class="label"><i class="fas fa-user-clock"></i> Underused Accounts</div>
                 <div class="value">$($UnderUsedAccounts.Count)</div>
                 <div class="subtitle">$PercentUnderusedAccounts of total</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="label"><i class="fas fa-user-slash"></i> Never Logged In</div>
+                <div class="value">$($NeverLoggedIn.Count)</div>
+                <div class="subtitle">Immediate cleanup candidates</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="label"><i class="fas fa-exclamation-circle"></i> High Priority Cleanup</div>
+                <div class="value">$($HighPriorityCleanup.Count)</div>
+                <div class="subtitle">Never used or 90+ days inactive</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="label"><i class="fas fa-clock"></i> Inactive 60+ Days</div>
+                <div class="value">$($Inactive60Plus.Count)</div>
+                <div class="subtitle">Review recommended</div>
             </div>
             <div class="stat-card danger">
                 <div class="label"><i class="fas fa-exclamation-triangle"></i> Duplicate Licenses</div>
@@ -1377,9 +1445,17 @@ $ScriptBlock = @"
         <div class="footer">
             <p><i class="fas fa-code"></i> Microsoft 365 License Mapper v$Version | Generated: $RunDate</p>
             <p><i class="fas fa-building"></i> Report for: $OrgName</p>
-            <p style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
-                <a href="https://currentcloud.net" target="_blank">CurrentCloud.net</a> |
-                <a href="https://tycholoke.com" target="_blank">TychoLoke.com</a>
+            <p style="margin-top: 15px; font-size: 12px;">
+                <i class="fas fa-copyright"></i> Copyright $(Get-Date -Format yyyy) Tycho Löke | All Rights Reserved
+            </p>
+            <p style="margin-top: 8px; font-size: 11px; opacity: 0.9;">
+                Created by <strong>Tycho Löke</strong> |
+                <a href="https://tycholoke.com" target="_blank" style="font-weight: 600;">TychoLoke.com</a> |
+                <a href="https://currentcloud.net" target="_blank">CurrentCloud.net</a>
+            </p>
+            <p style="margin-top: 8px; font-size: 10px; opacity: 0.7;">
+                <i class="fas fa-info-circle"></i> This tool is provided as-is for administrative purposes.
+                Visit <a href="https://tycholoke.com" target="_blank">tycholoke.com</a> for updates and documentation.
             </p>
         </div>
     </div>
@@ -1793,6 +1869,95 @@ $ScriptBlock += @"
             });
 
             return visibleCount;
+        }
+
+        // ========================================
+        // QUICK FILTER FUNCTIONALITY
+        // ========================================
+        function applyFilter(filterType) {
+            const userTable = document.getElementById('userTable');
+            if (!userTable) return;
+
+            const tbody = userTable.querySelector('tbody');
+            const rows = tbody.querySelectorAll('tr');
+            let visibleCount = 0;
+            let filterDescription = '';
+
+            // Clear global search when applying a filter
+            const globalSearch = document.getElementById('globalSearch');
+            if (globalSearch) globalSearch.value = '';
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let showRow = false;
+
+                // Get the Status column (usually last column or second to last)
+                const statusCell = cells[cells.length - 2]; // Adjust if needed
+                const duplicatesCell = cells[cells.length - 3]; // Duplicates detected column
+                const statusText = statusCell ? statusCell.textContent.trim() : '';
+                const duplicatesText = duplicatesCell ? duplicatesCell.textContent.trim() : '';
+
+                switch(filterType) {
+                    case 'all':
+                        showRow = true;
+                        filterDescription = 'all';
+                        break;
+                    case 'never':
+                        showRow = statusText.includes('Never logged in');
+                        filterDescription = 'never logged in accounts';
+                        break;
+                    case 'cleanup':
+                        showRow = statusText.includes('Cleanup candidate') ||
+                                  statusText.includes('High priority cleanup') ||
+                                  statusText.includes('Never logged in');
+                        filterDescription = 'high priority cleanup candidates';
+                        break;
+                    case '60days':
+                        showRow = statusText.includes('60+ days') ||
+                                  statusText.includes('90+ days') ||
+                                  statusText.includes('180+ days');
+                        filterDescription = 'accounts inactive 60+ days';
+                        break;
+                    case '90days':
+                        showRow = statusText.includes('90+ days') ||
+                                  statusText.includes('180+ days');
+                        filterDescription = 'accounts inactive 90+ days';
+                        break;
+                    case 'duplicates':
+                        showRow = duplicatesText.includes('Warning: Duplicate');
+                        filterDescription = 'accounts with duplicate licenses';
+                        break;
+                }
+
+                if (showRow) {
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+
+            // Update filter status
+            const filterStatus = document.getElementById('filterStatus');
+            const filteredCount = document.getElementById('filteredCount');
+
+            if (filteredCount) {
+                filteredCount.textContent = visibleCount;
+            }
+
+            if (filterStatus) {
+                if (filterType === 'all') {
+                    filterStatus.innerHTML = '<i class="fas fa-info-circle"></i> Showing all <span id="filteredCount">' + visibleCount + '</span> accounts';
+                } else {
+                    filterStatus.innerHTML = '<i class="fas fa-filter"></i> Showing <span id="filteredCount">' + visibleCount + '</span> ' + filterDescription;
+                }
+            }
+
+            // Update user table count
+            const userTableCount = document.getElementById('userTableCount');
+            if (userTableCount) {
+                userTableCount.textContent = visibleCount;
+            }
         }
 
         // ========================================
