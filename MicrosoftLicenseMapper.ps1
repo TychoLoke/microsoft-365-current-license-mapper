@@ -257,28 +257,6 @@ $BuiltInPricingEur = [ordered]@{
   "Microsoft 365 Business Standard"          = 11.70
   "Microsoft 365 Business Premium"           = 20.60
   "Microsoft 365 Apps for business"          = 9.80
-  "Microsoft 365 E3"                         = 37.70
-  "Microsoft 365 E5"                         = 59.70
-  "Office 365 E3"                            = 25.10
-  "Office 365 Enterprise E3"                 = 25.10
-  "Office 365 E5"                            = 41.50
-  "Office 365 Enterprise E5"                 = 41.50
-  "Microsoft Teams Enterprise"               = 8.00
-  "Microsoft Teams EEA"                      = 8.00
-  "Microsoft Teams Premium"                  = 9.40
-  "Exchange Online Plan 1"                   = 3.70
-  "Exchange Online (Plan 1)"                 = 3.70
-  "Exchange Online Plan 2"                   = 7.50
-  "Exchange Online (Plan 2)"                 = 7.50
-  "Microsoft Entra ID P1"                    = 5.60
-  "Azure Active Directory Premium P1"        = 5.60
-  "Microsoft Entra ID P2"                    = 8.40
-  "Azure Active Directory Premium P2"        = 8.40
-  "Visio Plan 1"                             = 4.70
-  "Visio Plan 2"                             = 14.00
-  "Planner Plan 1"                           = 9.40
-  "Planner and Project Plan 3"               = 28.10
-  "Planner and Project Plan 5"               = 51.50
 }
 
 Function Normalize-PlanName {
@@ -339,7 +317,11 @@ if ($PricingCurrency -in @("USD", "EUR")) {
 
   if ($PricingMatchedSkus -gt 0) {
     $PricingInfoAvailable = $True
-    $PricingSourceLabel = "Built-in ($Currency)"
+    if ($Currency -eq "EUR") {
+      $PricingSourceLabel = "Built-in (EUR, limited coverage)"
+    } else {
+      $PricingSourceLabel = "Built-in ($Currency)"
+    }
     Write-Host "Using built-in pricing (common licenses) in $Currency" -ForegroundColor Yellow
     Write-Host "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list" -ForegroundColor Cyan
   } else {
@@ -665,6 +647,12 @@ ForEach ($S in $SkuSummary) {
   } Else {
     $BoughtUnits = $S.PrepaidUnits.Enabled
   }
+  $UnusedUnits = [int]($BoughtUnits - $S.ConsumedUnits)
+  if ($BoughtUnits -gt 0) {
+    $UtilizationPct = ($S.ConsumedUnits / $BoughtUnits).ToString("P0")
+  } else {
+    $UtilizationPct = "0%"
+  }
   If ($PricingInfoAvailable) {
     $SKUTotalCost = ($SKUCost * $BoughtUnits)
     $SkuReportLine = [PSCustomObject][Ordered]@{  
@@ -672,6 +660,8 @@ ForEach ($S in $SkuSummary) {
       "SKU Name"              = $SkuDisplayName 
       "Units Used"            = $S.ConsumedUnits 
       "Units Purchased"       = $BoughtUnits
+      "Unused Units"          = $UnusedUnits
+      "Utilization %"         = $UtilizationPct
       "Annual license costs"  = $SKUTotalCost
       "Annual licensing cost" = ("{0} {1}" -f $Currency, ('{0:N2}' -f $SKUTotalCost))
     }
@@ -681,10 +671,14 @@ ForEach ($S in $SkuSummary) {
       "SKU Name"        = $SkuDisplayName 
       "Units Used"      = $S.ConsumedUnits 
       "Units Purchased" = $BoughtUnits
+      "Unused Units"    = $UnusedUnits
+      "Utilization %"   = $UtilizationPct
     }
   }
   $SkuReport.Add($SkuReportLine) 
-  $TotalBoughtLicenseCosts = $TotalBoughtLicenseCosts + $SKUTotalCost
+  if ($PricingInfoAvailable) {
+    $TotalBoughtLicenseCosts = $TotalBoughtLicenseCosts + $SKUTotalCost
+  }
 }
 
 If ($PricingInfoAvailable) {
@@ -696,6 +690,31 @@ If ($PricingInfoAvailable) {
   $SkuReport = $SkuReport | Sort-Object "Annual license costs" -Descending
 } Else {
   $SkuReport = $SkuReport | Sort-Object "SKU Name" -Descending
+}
+
+# Action insights
+$DuplicateLicenseUsers = $Report | Where-Object { $_.'Duplicates detected' -like "Warning:*" }
+$TopCleanupCandidates = if ($PricingInfoAvailable) {
+  $HighPriorityCleanup | Sort-Object UserCosts -Descending | Select-Object -First 10 User, UPN, Department, "Days since last signin", "Annual License Costs", Status
+} else {
+  $HighPriorityCleanup | Sort-Object "Days since last signin" -Descending | Select-Object -First 10 User, UPN, Department, "Days since last signin", Status
+}
+
+$UnderutilizedSkus = if ($PricingInfoAvailable) {
+  $SkuReport | Where-Object { $_.'Units Purchased' -gt 0 -and $_.'Unused Units' -gt 0 } |
+    Sort-Object 'Unused Units' -Descending |
+    Select-Object -First 10 "SKU Name", "Units Used", "Units Purchased", "Unused Units", "Utilization %", "Annual licensing cost"
+} else {
+  $SkuReport | Where-Object { $_.'Units Purchased' -gt 0 -and $_.'Unused Units' -gt 0 } |
+    Sort-Object 'Unused Units' -Descending |
+    Select-Object -First 10 "SKU Name", "Units Used", "Units Purchased", "Unused Units", "Utilization %"
+}
+
+$PotentialSavingsOutput = if ($PricingInfoAvailable) {
+  $PotentialSavings = ($HighPriorityCleanup | Measure-Object UserCosts -Sum).Sum
+  ("{0} {1}" -f $Currency, ('{0:N2}' -f $PotentialSavings))
+} else {
+  "N/A"
 }
 
 If ($PricingInfoAvailable) { 
@@ -1292,6 +1311,46 @@ $HtmlHead = @"
             animation: fadeUp 0.6s ease both;
         }
 
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .insight-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
+        }
+
+        .insight-card h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .callout {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: linear-gradient(120deg, rgba(240, 156, 11, 0.12), rgba(255, 255, 255, 0.6));
+            border: 1px solid var(--glass-border);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        [data-theme="dark"] .callout {
+            background: linear-gradient(120deg, rgba(240, 156, 11, 0.2), rgba(15, 23, 42, 0.6));
+        }
+
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -1881,6 +1940,51 @@ $DashboardHTML += @"
             </div>
 "@
 
+# Action Insights tables
+$TopCleanupCandidatesHTML = $TopCleanupCandidates | ConvertTo-Html -Fragment
+$TopCleanupCandidatesHTML = $TopCleanupCandidatesHTML -replace '<table>', '<table class="sortable">'
+$TopCleanupCandidatesHTML = $TopCleanupCandidatesHTML -replace '<th>', '<th class="sortable">'
+
+$DuplicateUsersHTML = $DuplicateLicenseUsers | Select-Object -First 10 User, UPN, Department, "Duplicates detected" | ConvertTo-Html -Fragment
+$DuplicateUsersHTML = $DuplicateUsersHTML -replace '<table>', '<table class="sortable">'
+$DuplicateUsersHTML = $DuplicateUsersHTML -replace '<th>', '<th class="sortable">'
+
+$UnderutilizedSkusHTML = $UnderutilizedSkus | ConvertTo-Html -Fragment
+$UnderutilizedSkusHTML = $UnderutilizedSkusHTML -replace '<table>', '<table class="sortable">'
+$UnderutilizedSkusHTML = $UnderutilizedSkusHTML -replace '<th>', '<th class="sortable">'
+
+$ActionInsightsHTML = @"
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-bolt"></i> Action Insights</h2>
+                </div>
+                <div class="callout">
+                    <i class="fas fa-piggy-bank" style="color: var(--primary-color);"></i>
+                    <span><strong>Potential savings from high‑priority cleanup:</strong> $PotentialSavingsOutput</span>
+                </div>
+                <div class="insight-grid" style="margin-top: 16px;">
+                    <div class="insight-card">
+                        <h4><i class="fas fa-user-slash"></i> Top Cleanup Candidates</h4>
+                        <div class="table-container">
+                            $TopCleanupCandidatesHTML
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <h4><i class="fas fa-copy"></i> Duplicate License Users</h4>
+                        <div class="table-container">
+                            $DuplicateUsersHTML
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <h4><i class="fas fa-chart-line"></i> Underutilized SKUs</h4>
+                        <div class="table-container">
+                            $UnderutilizedSkusHTML
+                        </div>
+                    </div>
+                </div>
+            </div>
+"@
+
 # User Licenses Table with enhanced wrapper
 $UserTableHTML = $Report | ConvertTo-Html -Fragment
 $UserTableHTML = $UserTableHTML -replace '<table>', '<table id="userTable" class="sortable">'
@@ -1907,7 +2011,11 @@ $HtmlBody1 = @"
 "@
 
 # SKU Distribution Table with enhanced wrapper
-$SkuTableHTML = $SkuReport | Select-Object "SKU Id", "SKU Name", "Units used", "Units purchased", "Annual licensing cost" | ConvertTo-Html -Fragment
+If ($PricingInfoAvailable) {
+  $SkuTableHTML = $SkuReport | Select-Object "SKU Id", "SKU Name", "Units used", "Units purchased", "Unused Units", "Utilization %", "Annual licensing cost" | ConvertTo-Html -Fragment
+} Else {
+  $SkuTableHTML = $SkuReport | Select-Object "SKU Id", "SKU Name", "Units used", "Units purchased", "Unused Units", "Utilization %" | ConvertTo-Html -Fragment
+}
 $SkuTableHTML = $SkuTableHTML -replace '<table>', '<table id="skuTable" class="sortable">'
 $SkuTableHTML = $SkuTableHTML -replace '<th>', '<th class="sortable">'
 
@@ -2980,7 +3088,7 @@ $ScriptBlock += @"
 "@
 
 # Assemble the complete HTML report
-$HtmlReport = $HtmlHead + $DashboardHTML + $HtmlBody1 + $HtmlBody2 + $HtmlTail + $ScriptBlock
+$HtmlReport = $HtmlHead + $DashboardHTML + $ActionInsightsHTML + $HtmlBody1 + $HtmlBody2 + $HtmlTail + $ScriptBlock
 $HtmlReport | Out-File $HtmlReportFile -Encoding UTF8
 
 Write-Host "Professional HTML report with advanced features generated successfully!" -ForegroundColor Green
