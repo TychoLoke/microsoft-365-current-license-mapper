@@ -56,6 +56,16 @@
 
 #requires -Version 7.0
 
+[CmdletBinding()]
+Param(
+  [string]$SkuDataPath = "C:\temp\SkuDataComplete.csv",
+  [string]$ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv",
+  [string]$CSVOutputFile = "C:\temp\Microsoft365LicensesReport.CSV",
+  [string]$HtmlReportFile = "C:\temp\Microsoft365LicensesReport.html",
+  [ValidateSet("Auto", "USD", "EUR")]
+  [string]$PricingCurrency = "Auto"
+)
+
 #region PowerShell Version Check
 
 # Verify PowerShell 7.0 or higher
@@ -77,16 +87,6 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 }
 
 #endregion
-
-[CmdletBinding()]
-Param(
-  [string]$SkuDataPath = "C:\temp\SkuDataComplete.csv",
-  [string]$ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv",
-  [string]$CSVOutputFile = "C:\temp\Microsoft365LicensesReport.CSV",
-  [string]$HtmlReportFile = "C:\temp\Microsoft365LicensesReport.html",
-  [ValidateSet("Auto", "USD", "EUR")]
-  [string]$PricingCurrency = "Auto"
-)
 
 Function Get-LicenseCosts {
   <#
