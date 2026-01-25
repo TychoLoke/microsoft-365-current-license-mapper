@@ -133,6 +133,36 @@ Function Get-LicenseCosts {
   Return ($Costs / 100)
 } 
 
+Function Get-LicenseCostsMonthly {
+  <#
+  .SYNOPSIS
+  Calculates the monthly cost of licenses assigned to a user account.
+  #>
+  [cmdletbinding()]
+  Param( [array]$Licenses )
+
+  [int]$Costs = 0
+
+  ForEach ($License in $Licenses) {
+    Try {
+      [string]$LicenseCost = $PricingHashTable[$License]
+
+      # Convert monthly cost to cents to avoid floating-point precision issues
+      [float]$LicenseCostCents = [float]$LicenseCost * 100
+
+      If ($LicenseCostCents -gt 0) {
+        $Costs = $Costs + ($LicenseCostCents)
+      }
+    }
+    Catch {
+      Write-Host ("Warning: Unable to find pricing for license SKU {0}" -f $License) -ForegroundColor Yellow
+    }
+  }
+
+  # Convert back from cents to currency units
+  Return ($Costs / 100)
+}
+
 #region Script Configuration and Initialization
 
 # Script metadata
@@ -556,7 +586,8 @@ ForEach ($License in $UserLicenses) {
 
   If ($PricingInfoAvailable) { 
     # Output report line with pricing info
-    [float]$UserCosts = Get-LicenseCosts -Licenses $UserLicenses.SkuId
+    [float]$UserCostsMonthly = Get-LicenseCostsMonthly -Licenses $UserLicenses.SkuId
+    [float]$UserCosts = $UserCostsMonthly * 12
     $TotalUserLicenseCosts = $TotalUserLicenseCosts + $UserCosts
     $ReportLine = [PSCustomObject][Ordered]@{  
       User                       = $User.DisplayName
@@ -568,6 +599,7 @@ ForEach ($License in $UserLicenses) {
       "Direct assigned licenses" = $LicenseInfo
       "Disabled Plans"           = $DisabledPlans 
       "Group based licenses"     = $GroupLicensingAssignments
+      "Monthly License Costs"    = ("{0} {1}" -f $Currency, ($UserCostsMonthly.toString('F2')))
       "Annual License Costs"     = ("{0} {1}" -f $Currency, ($UserCosts.toString('F2')))
       "Last license change"      = $LastLicenseChange
       "Account created"          = $AccountCreatedDate
@@ -627,7 +659,8 @@ $SkuReport = [System.Collections.Generic.List[Object]]::new()
 [array]$SkuSummary = Get-MgSubscribedSku | Select-Object SkuId, ConsumedUnits, PrepaidUnits
 $SkuSummary = $SkuSummary | Where-Object { $_.ConsumedUnits -ne 0 }
 ForEach ($S in $SkuSummary) {
-  $SKUCost = Get-LicenseCosts -Licenses $S.SkuId
+  $SKUCostMonthly = Get-LicenseCostsMonthly -Licenses $S.SkuId
+  $SKUCost = $SKUCostMonthly * 12
   $SkuDisplayName = $SkuHashtable[$S.SkuId]
   If ($S.PrepaidUnits.Enabled -le $S.ConsumedUnits ) {
     $BoughtUnits = $S.ConsumedUnits 
@@ -649,6 +682,7 @@ ForEach ($S in $SkuSummary) {
       "Units Purchased"       = $BoughtUnits
       "Unused Units"          = $UnusedUnits
       "Utilization %"         = $UtilizationPct
+      "Monthly license costs" = ("{0} {1}" -f $Currency, ('{0:N2}' -f ($SKUCostMonthly * $BoughtUnits)))
       "Annual license costs"  = $SKUTotalCost
       "Annual licensing cost" = ("{0} {1}" -f $Currency, ('{0:N2}' -f $SKUTotalCost))
     }
@@ -828,7 +862,7 @@ $HtmlHead = @"
 
         body {
             font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.65;
             color: var(--text-primary);
             background: radial-gradient(circle at 12% 20%, rgba(240, 156, 11, 0.08), transparent 45%),
@@ -1160,15 +1194,15 @@ $HtmlHead = @"
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 18px;
-            padding: 26px 30px 18px;
+            gap: 14px;
+            padding: 20px 26px 14px;
             background: var(--light-bg);
         }
 
         .stat-card {
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.7));
             border-radius: 18px;
-            padding: 28px;
+            padding: 20px;
             box-shadow: var(--shadow);
             border: 1px solid var(--glass-border);
             border-left: 5px solid var(--primary-color);
@@ -1265,7 +1299,7 @@ $HtmlHead = @"
         }
 
         .stat-card .value {
-            font-size: 36px;
+            font-size: 30px;
             font-weight: 600;
             color: var(--text-primary);
             line-height: 1.2;
@@ -1281,7 +1315,7 @@ $HtmlHead = @"
 
         /* Content Sections */
         .content {
-            padding: 30px;
+            padding: 22px;
             background: var(--light-bg);
         }
 
@@ -1289,7 +1323,7 @@ $HtmlHead = @"
             margin-bottom: 40px;
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 28px;
+            padding: 22px;
             box-shadow: var(--shadow);
             transition: background 0.3s ease;
             border: 1px solid var(--glass-border);
@@ -1375,7 +1409,7 @@ $HtmlHead = @"
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 22px;
+            gap: 18px;
             margin-bottom: 30px;
         }
 
@@ -1462,7 +1496,7 @@ $HtmlHead = @"
         }
 
         th {
-            padding: 16px 12px;
+            padding: 12px 10px;
             text-align: left;
             font-weight: 600;
             color: var(--text-primary);
@@ -1519,8 +1553,37 @@ $HtmlHead = @"
         }
 
         td {
-            padding: 14px 12px;
+            padding: 10px 10px;
             color: var(--text-primary);
+        }
+
+        .compact body {
+            font-size: 12px;
+        }
+
+        .compact .dashboard {
+            gap: 10px;
+            padding: 16px 20px 12px;
+        }
+
+        .compact .stat-card {
+            padding: 16px;
+        }
+
+        .compact .stat-card .value {
+            font-size: 26px;
+        }
+
+        .compact .content {
+            padding: 18px;
+        }
+
+        .compact .section {
+            padding: 18px;
+        }
+
+        .compact th, .compact td {
+            padding: 8px 8px;
         }
 
         /* Status Badges */
@@ -1727,9 +1790,18 @@ $HtmlHead = @"
                 <button class="btn btn-secondary" onclick="window.print()">
                     <i class="fas fa-print"></i> Print
                 </button>
+                <button class="btn btn-secondary" onclick="toggleCompact()" title="Toggle compact density">
+                    <i class="fas fa-compress-alt"></i> Compact
+                </button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
+            </div>
+        </div>
+        <div class="toolbar" style="padding: 8px 30px; border-top: 1px solid var(--border-color); font-size: 12px;">
+            <div style="color: var(--text-secondary); display: flex; gap: 8px; align-items: center;">
+                <i class="fas fa-coins"></i>
+                Currency locked at report generation. Run with <strong>-PricingCurrency USD</strong> or <strong>-PricingCurrency EUR</strong>.
             </div>
         </div>
 
@@ -1999,7 +2071,7 @@ $HtmlBody1 = @"
 
 # SKU Distribution Table with enhanced wrapper
 If ($PricingInfoAvailable) {
-  $SkuTableHTML = $SkuReport | Select-Object "SKU Id", "SKU Name", "Units used", "Units purchased", "Unused Units", "Utilization %", "Annual licensing cost" | ConvertTo-Html -Fragment
+  $SkuTableHTML = $SkuReport | Select-Object "SKU Id", "SKU Name", "Units used", "Units purchased", "Unused Units", "Utilization %", "Monthly license costs", "Annual licensing cost" | ConvertTo-Html -Fragment
 } Else {
   $SkuTableHTML = $SkuReport | Select-Object "SKU Id", "SKU Name", "Units used", "Units purchased", "Unused Units", "Utilization %" | ConvertTo-Html -Fragment
 }
@@ -2190,7 +2262,7 @@ $ScriptBlock = @"
             chart.update();
         }
 
-        // Load saved theme on page load
+        // Load saved theme and compact mode on page load
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             const html = document.documentElement;
@@ -2199,6 +2271,10 @@ $ScriptBlock = @"
             if (savedTheme === 'dark') {
                 html.setAttribute('data-theme', 'dark');
                 themeIcon.className = 'fas fa-sun';
+            }
+
+            if (localStorage.getItem('compact') === '1') {
+                html.classList.add('compact');
             }
         });
 
@@ -3021,6 +3097,13 @@ $ScriptBlock += @"
                     buttonEl.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
                 }
             }
+        }
+
+        // Compact density toggle
+        function toggleCompact() {
+            const html = document.documentElement;
+            html.classList.toggle('compact');
+            localStorage.setItem('compact', html.classList.contains('compact') ? '1' : '0');
         }
 
         // ========================================
