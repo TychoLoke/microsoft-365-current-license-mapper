@@ -599,6 +599,7 @@ $HtmlHead = @"
     <title>Microsoft 365 License Report - $OrgName</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap">
     <style>
         * {
             margin: 0;
@@ -607,57 +608,61 @@ $HtmlHead = @"
         }
 
         :root {
-            --primary-color: #0078d4;
-            --primary-hover: #106ebe;
-            --success-color: #10893e;
-            --success-light: #dff6dd;
-            --warning-color: #ff8c00;
-            --warning-light: #fff4ce;
-            --danger-color: #d13438;
-            --danger-light: #fde7e9;
-            --info-color: #0099bc;
-            --info-light: #cff4fc;
-            --dark-bg: #1e1e1e;
-            --light-bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-primary: #323130;
-            --text-secondary: #605e5c;
-            --border-color: #e1dfdd;
-            --shadow: 0 3px 12px rgba(0,0,0,0.12);
-            --shadow-hover: 0 6px 20px rgba(0,0,0,0.18);
-            --header-gradient-start: #0078d4;
-            --header-gradient-end: #005a9e;
-            --accent-purple: #8b5cf6;
-            --accent-orange: #ff6b35;
-            --accent-teal: #14b8a6;
-            --accent-pink: #ec4899;
+            --primary-color: #f09c0b;
+            --primary-hover: #d98208;
+            --success-color: #15803d;
+            --success-light: rgba(21, 128, 61, 0.12);
+            --warning-color: #c2410c;
+            --warning-light: rgba(194, 65, 12, 0.12);
+            --danger-color: #b91c1c;
+            --danger-light: rgba(185, 28, 28, 0.12);
+            --info-color: #0ea5e9;
+            --info-light: rgba(14, 165, 233, 0.12);
+            --dark-bg: #0b0f14;
+            --light-bg: #f5f7fb;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-primary: #16202a;
+            --text-secondary: #4b5563;
+            --border-color: rgba(15, 23, 42, 0.08);
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+            --shadow-hover: 0 16px 40px rgba(15, 23, 42, 0.2);
+            --header-gradient-start: #2b1a00;
+            --header-gradient-end: #f09c0b;
+            --accent-purple: #6d28d9;
+            --accent-orange: #f59e0b;
+            --accent-teal: #0f766e;
+            --accent-pink: #db2777;
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-highlight: rgba(255, 255, 255, 0.6);
         }
 
         [data-theme="dark"] {
-            --primary-color: #60a5fa;
-            --primary-hover: #3b82f6;
+            --primary-color: #fbbf24;
+            --primary-hover: #f59e0b;
             --success-color: #34d399;
-            --success-light: rgba(52, 211, 153, 0.15);
-            --warning-color: #fbbf24;
-            --warning-light: rgba(251, 191, 36, 0.15);
+            --success-light: rgba(52, 211, 153, 0.16);
+            --warning-color: #fb923c;
+            --warning-light: rgba(251, 146, 60, 0.16);
             --danger-color: #f87171;
-            --danger-light: rgba(248, 113, 113, 0.15);
+            --danger-light: rgba(248, 113, 113, 0.18);
             --info-color: #22d3ee;
-            --info-light: rgba(34, 211, 238, 0.15);
-            --dark-bg: #0f0f0f;
-            --light-bg: #1a1a1a;
-            --card-bg: #262626;
-            --text-primary: #f5f5f5;
-            --text-secondary: #a3a3a3;
-            --border-color: #404040;
-            --shadow: 0 4px 16px rgba(0,0,0,0.6);
-            --shadow-hover: 0 8px 24px rgba(0,0,0,0.8);
-            --header-gradient-start: #1e40af;
-            --header-gradient-end: #1e3a8a;
-            --accent-purple: #a78bfa;
-            --accent-orange: #fb923c;
+            --info-light: rgba(34, 211, 238, 0.18);
+            --dark-bg: #090c12;
+            --light-bg: #0f172a;
+            --card-bg: rgba(17, 24, 39, 0.9);
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5f5;
+            --border-color: rgba(148, 163, 184, 0.2);
+            --shadow: 0 12px 32px rgba(0,0,0,0.55);
+            --shadow-hover: 0 18px 48px rgba(0,0,0,0.65);
+            --header-gradient-start: #1f1406;
+            --header-gradient-end: #7a4a08;
+            --accent-purple: #c084fc;
+            --accent-orange: #fbbf24;
             --accent-teal: #2dd4bf;
-            --accent-pink: #f472b6;
+            --accent-pink: #f9a8d4;
+            --glass-border: rgba(148, 163, 184, 0.2);
+            --glass-highlight: rgba(255, 255, 255, 0.1);
         }
 
         html {
@@ -665,35 +670,73 @@ $HtmlHead = @"
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+            font-family: 'Manrope', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.65;
             color: var(--text-primary);
-            background: var(--light-bg);
-            padding: 20px;
+            background: radial-gradient(circle at 12% 20%, rgba(240, 156, 11, 0.08), transparent 45%),
+                        radial-gradient(circle at 85% 10%, rgba(14, 165, 233, 0.06), transparent 40%),
+                        radial-gradient(circle at 20% 90%, rgba(109, 40, 217, 0.05), transparent 45%),
+                        var(--light-bg);
+            padding: 22px;
             transition: background 0.3s ease, color 0.3s ease;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.28;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::before {
+            top: -120px;
+            right: -60px;
+            background: rgba(15, 118, 110, 0.35);
+        }
+
+        body::after {
+            bottom: -120px;
+            left: -60px;
+            background: rgba(14, 165, 233, 0.35);
         }
 
         .container {
             max-width: 1600px;
             margin: 0 auto;
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 18px;
             box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
             overflow: hidden;
             transition: background 0.3s ease;
+            position: relative;
+            z-index: 1;
         }
 
         /* Header Styles with Banner Image */
         .header {
-            background-image: linear-gradient(rgba(0, 120, 212, 0.85), rgba(0, 90, 158, 0.90)), url('https://p1-ofp.static.pub/ShareResource/na/faqs/img/microsoft-Office-365-sub-hero-banner.jpg');
+            background-image:
+                radial-gradient(circle at 12% 18%, rgba(240, 156, 11, 0.35), transparent 45%),
+                radial-gradient(circle at 88% 22%, rgba(125, 77, 8, 0.28), transparent 48%),
+                linear-gradient(135deg, rgba(31, 20, 6, 0.92) 0%, rgba(240, 156, 11, 0.78) 100%),
+                url('https://p1-ofp.static.pub/ShareResource/na/faqs/img/microsoft-Office-365-sub-hero-banner.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             color: white;
-            padding: 60px 40px;
+            padding: 64px 40px 52px;
             text-align: center;
             position: relative;
+            overflow: hidden;
         }
 
         .header::before {
@@ -703,7 +746,16 @@ $HtmlHead = @"
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(0, 120, 212, 0.75) 0%, rgba(0, 90, 158, 0.80) 100%);
+            background: linear-gradient(135deg, rgba(22, 16, 6, 0.7) 0%, rgba(240, 156, 11, 0.45) 100%);
+            z-index: 0;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.18), transparent 55%);
+            opacity: 0.7;
             z-index: 0;
         }
 
@@ -713,33 +765,71 @@ $HtmlHead = @"
         }
 
         .header h1 {
-            font-size: 42px;
+            font-family: 'Fraunces', 'Segoe UI', serif;
+            font-size: 48px;
             font-weight: 600;
             margin-bottom: 12px;
-            text-shadow: 0 3px 6px rgba(0,0,0,0.4);
-            letter-spacing: -0.5px;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.45);
+            letter-spacing: -0.8px;
         }
 
         .header h2 {
-            font-size: 24px;
-            font-weight: 500;
-            opacity: 1;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-size: 22px;
+            font-weight: 600;
+            opacity: 0.98;
+            margin-bottom: 6px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.35);
         }
 
         .header h3 {
-            font-size: 15px;
-            font-weight: 400;
+            font-size: 14px;
+            font-weight: 500;
             opacity: 0.95;
             text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .brand-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .brand-logo img {
+            height: 40px;
+            width: auto;
+            filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 18px auto 8px;
+        }
+
+        .meta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(8px);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
         }
 
         .header .brought-by {
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.3);
-            font-size: 14px;
+            font-size: 13px;
             opacity: 0.95;
         }
 
@@ -788,6 +878,22 @@ $HtmlHead = @"
             flex-wrap: wrap;
             gap: 15px;
             transition: background 0.3s ease;
+            backdrop-filter: blur(12px);
+        }
+
+        .main-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+        }
+
+        [data-theme="dark"] .main-toolbar {
+            background: linear-gradient(120deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.7));
+        }
+
+        .filter-toolbar {
+            border-top: 1px solid var(--border-color);
         }
 
         .search-box {
@@ -802,7 +908,7 @@ $HtmlHead = @"
             flex: 1;
             padding: 10px 15px;
             border: 2px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 10px;
             font-size: 14px;
             background: var(--card-bg);
             color: var(--text-primary);
@@ -824,19 +930,21 @@ $HtmlHead = @"
         .btn {
             padding: 10px 20px;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            letter-spacing: 0.2px;
         }
 
         .btn-primary {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), #fbbf24);
             color: white;
+            box-shadow: 0 8px 18px rgba(240, 156, 11, 0.25);
         }
 
         .btn-primary:hover {
@@ -845,9 +953,14 @@ $HtmlHead = @"
         }
 
         .btn-secondary {
-            background: var(--card-bg);
+            background: rgba(255, 255, 255, 0.7);
             color: var(--text-primary);
-            border: 2px solid var(--border-color);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(6px);
+        }
+
+        [data-theme="dark"] .btn-secondary {
+            background: rgba(15, 23, 42, 0.6);
         }
 
         .btn-secondary:hover {
@@ -866,7 +979,7 @@ $HtmlHead = @"
 
         .theme-toggle {
             background: var(--card-bg);
-            border: 2px solid var(--border-color);
+            border: 1px solid var(--border-color);
             color: var(--text-primary);
             width: 44px;
             height: 44px;
@@ -876,6 +989,7 @@ $HtmlHead = @"
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: var(--shadow);
         }
 
         .theme-toggle:hover {
@@ -889,20 +1003,39 @@ $HtmlHead = @"
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            padding: 30px;
+            gap: 18px;
+            padding: 26px 30px 18px;
             background: var(--light-bg);
         }
 
         .stat-card {
-            background: var(--card-bg);
-            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.7));
+            border-radius: 18px;
             padding: 28px;
             box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
             border-left: 5px solid var(--primary-color);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            animation: floatIn 0.6s ease both;
+        }
+
+        .dashboard .stat-card:nth-child(1) { animation-delay: 0.05s; }
+        .dashboard .stat-card:nth-child(2) { animation-delay: 0.1s; }
+        .dashboard .stat-card:nth-child(3) { animation-delay: 0.15s; }
+        .dashboard .stat-card:nth-child(4) { animation-delay: 0.2s; }
+        .dashboard .stat-card:nth-child(5) { animation-delay: 0.25s; }
+        .dashboard .stat-card:nth-child(6) { animation-delay: 0.3s; }
+        .dashboard .stat-card:nth-child(7) { animation-delay: 0.35s; }
+        .dashboard .stat-card:nth-child(8) { animation-delay: 0.4s; }
+        .dashboard .stat-card:nth-child(9) { animation-delay: 0.45s; }
+        .dashboard .stat-card:nth-child(10) { animation-delay: 0.5s; }
+        .dashboard .stat-card:nth-child(11) { animation-delay: 0.55s; }
+        .dashboard .stat-card:nth-child(12) { animation-delay: 0.6s; }
+
+        [data-theme="dark"] .stat-card {
+            background: linear-gradient(140deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.8));
         }
 
         .stat-card::before {
@@ -913,7 +1046,7 @@ $HtmlHead = @"
             width: 200px;
             height: 200px;
             background: radial-gradient(circle, var(--primary-color) 0%, transparent 70%);
-            opacity: 0.08;
+            opacity: 0.06;
             transition: all 0.4s ease;
         }
 
@@ -952,23 +1085,35 @@ $HtmlHead = @"
         .stat-card.info::before { background: radial-gradient(circle, var(--info-color) 0%, transparent 70%); }
 
         .stat-card .label {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
             color: var(--text-secondary);
             margin-bottom: 8px;
-            font-weight: 600;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
+        .stat-card .label i {
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(240, 156, 11, 0.15);
+            color: var(--primary-color);
+        }
+
         .stat-card .value {
             font-size: 36px;
-            font-weight: 300;
+            font-weight: 600;
             color: var(--text-primary);
             line-height: 1.2;
             margin: 10px 0;
+            letter-spacing: -0.4px;
         }
 
         .stat-card .subtitle {
@@ -986,10 +1131,14 @@ $HtmlHead = @"
         .section {
             margin-bottom: 40px;
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 30px;
+            border-radius: 16px;
+            padding: 28px;
             box-shadow: var(--shadow);
             transition: background 0.3s ease;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+            animation: fadeUp 0.6s ease both;
         }
 
         .section-header {
@@ -1003,31 +1152,43 @@ $HtmlHead = @"
 
         .section-title {
             font-size: 24px;
-            font-weight: 400;
+            font-weight: 600;
             color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 12px;
+            position: relative;
         }
 
         .section-title i {
             color: var(--primary-color);
         }
 
+        .section-title::after {
+            content: '';
+            display: inline-block;
+            height: 6px;
+            width: 48px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--primary-color), transparent);
+            margin-left: 10px;
+        }
+
         /* Chart Containers */
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
+            gap: 22px;
             margin-bottom: 30px;
         }
 
         .chart-container {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 18px;
             box-shadow: var(--shadow);
             transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
         }
 
         .chart-container:hover {
@@ -1048,14 +1209,15 @@ $HtmlHead = @"
         /* Modern Table Styles */
         .table-wrapper {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
         }
 
         .table-controls {
             padding: 15px 20px;
-            background: var(--light-bg);
+            background: linear-gradient(120deg, rgba(248, 250, 252, 0.85), rgba(255, 255, 255, 0.7));
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
@@ -1064,9 +1226,22 @@ $HtmlHead = @"
             gap: 10px;
         }
 
+        [data-theme="dark"] .table-controls {
+            background: linear-gradient(120deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.75));
+        }
+
         .table-info {
             font-size: 13px;
             color: var(--text-secondary);
+        }
+
+        .table-search {
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 13px;
         }
 
         .table-container {
@@ -1138,8 +1313,8 @@ $HtmlHead = @"
 
         tbody tr:hover {
             background: var(--light-bg) !important;
-            transform: scale(1.005);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
         }
 
         tbody tr.hidden {
@@ -1179,7 +1354,7 @@ $HtmlHead = @"
 
         /* Footer */
         .footer {
-            background: var(--dark-bg);
+            background: linear-gradient(135deg, var(--dark-bg), #0f172a);
             color: white;
             padding: 30px;
             text-align: center;
@@ -1209,6 +1384,36 @@ $HtmlHead = @"
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        @keyframes floatIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
 
         /* Print Styles */
@@ -1242,20 +1447,20 @@ $HtmlHead = @"
             }
 
             .header h1 {
-                font-size: 24px;
+                font-size: 28px;
             }
 
             .dashboard {
                 grid-template-columns: 1fr;
-                padding: 20px;
+                padding: 18px;
             }
 
             .content {
-                padding: 20px;
+                padding: 18px;
             }
 
             .section {
-                padding: 20px;
+                padding: 18px;
             }
 
             .charts-grid {
@@ -1287,9 +1492,18 @@ $HtmlHead = @"
 <body>
     <div class="container">
         <div class="header">
+            <div class="brand-logo">
+                <img src="logo-white-text-CAoxNp-z.svg" alt="Brand logo">
+            </div>
             <h1><i class="fas fa-chart-line"></i> Microsoft 365 License Report</h1>
             <h2>$OrgName</h2>
             <h3><i class="far fa-clock"></i> Generated: $RunDate</h3>
+            <div class="hero-meta">
+                <span class="meta-pill"><i class="fas fa-users"></i> $($Report.Count) Licensed</span>
+                <span class="meta-pill"><i class="fas fa-triangle-exclamation"></i> $DuplicateSKULicenses Duplicates</span>
+                <span class="meta-pill"><i class="fas fa-layer-group"></i> $($SkuReport.Count) SKUs</span>
+                <span class="meta-pill"><i class="fas fa-code-branch"></i> v$Version</span>
+            </div>
             <div class="brought-by">
                 <i class="fas fa-code"></i> Brought to you by <a href="https://tycholoke.com" target="_blank">Tycho Löke</a> from <a href="https://tycholoke.com" target="_blank">tycholoke.com</a>
                 <br>
@@ -1302,7 +1516,7 @@ $HtmlHead = @"
             </div>
         </div>
 
-        <div class="toolbar">
+        <div class="toolbar main-toolbar">
             <div class="search-box">
                 <i class="fas fa-search" style="color: var(--text-secondary);"></i>
                 <input type="text" id="globalSearch" placeholder="Search across all tables...">
@@ -1321,7 +1535,7 @@ $HtmlHead = @"
         </div>
 
         <!-- Enhanced Cleanup Filters Section -->
-        <div class="toolbar" style="background: linear-gradient(135deg, var(--light-bg) 0%, var(--card-bg) 100%); border-top: none; padding: 15px 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+        <div class="toolbar filter-toolbar" style="background: linear-gradient(135deg, var(--light-bg) 0%, var(--card-bg) 100%); border-top: none; padding: 15px 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <span style="font-weight: 700; color: var(--text-primary); font-size: 14px; display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-filter"></i> Smart Cleanup Filters
@@ -1507,7 +1721,7 @@ $HtmlBody1 = @"
                         <div class="table-info">
                             <span id="userTableCount">$($Report.Count)</span> users found
                         </div>
-                        <input type="text" id="userTableSearch" placeholder="Filter users..." style="padding: 8px 12px; border: 2px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-primary);">
+                        <input type="text" id="userTableSearch" class="table-search" placeholder="Filter users...">
                     </div>
                     <div class="table-container">
                         $UserTableHTML
@@ -1532,7 +1746,7 @@ $HtmlBody2 = @"
                         <div class="table-info">
                             <span id="skuTableCount">$($SkuReport.Count)</span> products found
                         </div>
-                        <input type="text" id="skuTableSearch" placeholder="Filter products..." style="padding: 8px 12px; border: 2px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-primary);">
+                        <input type="text" id="skuTableSearch" class="table-search" placeholder="Filter products...">
                     </div>
                     <div class="table-container">
                         $SkuTableHTML
@@ -1564,7 +1778,7 @@ If ($PricingInfoAvailable) {
                         <div class="table-info">
                             <span id="departmentTableCount">$($DepartmentReport.Count)</span> departments found
                         </div>
-                        <input type="text" id="departmentTableSearch" placeholder="Filter departments..." style="padding: 8px 12px; border: 2px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-primary);">
+                        <input type="text" id="departmentTableSearch" class="table-search" placeholder="Filter departments...">
                     </div>
                     <div class="table-container">
                         $DeptTableHTML
@@ -1583,7 +1797,7 @@ If ($PricingInfoAvailable) {
                         <div class="table-info">
                             <span id="countryTableCount">$($CountryReport.Count)</span> countries found
                         </div>
-                        <input type="text" id="countryTableSearch" placeholder="Filter countries..." style="padding: 8px 12px; border: 2px solid var(--border-color); border-radius: 6px; background: var(--card-bg); color: var(--text-primary);">
+                        <input type="text" id="countryTableSearch" class="table-search" placeholder="Filter countries...">
                     </div>
                     <div class="table-container">
                         $CountryTableHTML
