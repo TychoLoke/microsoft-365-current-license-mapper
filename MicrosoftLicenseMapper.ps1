@@ -23,6 +23,9 @@
     .PARAMETER HtmlReportFile
     Path for the HTML output report (default: C:\temp\Microsoft365LicensesReport.html)
 
+    .PARAMETER PricingCurrency
+    Pricing mode for built-in top-25 license pricing when CSV pricing is missing (Auto, USD, EUR)
+
     .EXAMPLE
     .\MicrosoftLicenseMapper.ps1
     Runs the script with default file paths
@@ -75,6 +78,16 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 
 #endregion
 
+[CmdletBinding()]
+Param(
+  [string]$SkuDataPath = "C:\temp\SkuDataComplete.csv",
+  [string]$ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv",
+  [string]$CSVOutputFile = "C:\temp\Microsoft365LicensesReport.CSV",
+  [string]$HtmlReportFile = "C:\temp\Microsoft365LicensesReport.html",
+  [ValidateSet("Auto", "USD", "EUR")]
+  [string]$PricingCurrency = "Auto"
+)
+
 Function Get-LicenseCosts {
   <#
   .SYNOPSIS
@@ -97,7 +110,7 @@ Function Get-LicenseCosts {
 
   ForEach ($License in $Licenses) {
     Try {
-      [string]$LicenseCost = $PricingHashTable[$License]
+[string]$LicenseCost = $PricingHashTable[$License]
 
       # Convert monthly cost to cents to avoid floating-point precision issues
       # (e.g., licenses costing $16.40/month)
@@ -126,19 +139,15 @@ Function Get-LicenseCosts {
 [datetime]$RunDate = Get-Date -format "dd-MMM-yyyy HH:mm:ss"
 $Version = "2.1"
 
-# Default currency (can be overridden by Currency column in SkuDataComplete.csv)
-[string]$Currency = "EUR"
+# Default currency (can be overridden by CSV pricing or PricingCurrency selection)
+[string]$Currency = "USD"
 
 Write-Host "===============================================" -ForegroundColor Cyan
 Write-Host "  Microsoft 365 License Mapper v$Version" -ForegroundColor Cyan
 Write-Host "===============================================" -ForegroundColor Cyan
 Write-Host ""
 
-# File paths - Modify these if using different locations
-$SkuDataPath = "C:\temp\SkuDataComplete.csv"
-$ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv"
-$CSVOutputFile = "C:\temp\Microsoft365LicensesReport.CSV"
-$HtmlReportFile = "C:\temp\Microsoft365LicensesReport.html"
+# File paths provided via parameters
 
 # Initialize counters
 $UnlicensedAccounts = 0
@@ -203,6 +212,107 @@ $ImportSkus = Import-CSV $skuDataPath
 $SkuHashTable = @{}
 $PricingHashTable = @{}
 
+# Built-in top-25 pricing (monthly per user) for USD/EUR
+# NOTE: Pricing is region-dependent and may vary by agreement; override with CSV for tenant-accurate costs.
+$BuiltInPricingUsd = [ordered]@{
+  "Microsoft 365 Business Basic"           = 6.00
+  "Microsoft 365 Business Standard"        = 12.50
+  "Microsoft 365 Business Premium"         = 22.00
+  "Microsoft 365 Apps for business"        = 8.25
+  "Microsoft 365 Apps for enterprise"      = 12.00
+  "Office 365 E1"                          = 10.00
+  "Office 365 Enterprise E1"               = 10.00
+  "Office 365 E3"                          = 23.00
+  "Office 365 Enterprise E3"               = 23.00
+  "Office 365 E5"                          = 38.00
+  "Office 365 Enterprise E5"               = 38.00
+  "Microsoft 365 E3"                       = 36.00
+  "Microsoft 365 E5"                       = 57.00
+  "Exchange Online Plan 1"                 = 4.00
+  "Exchange Online Plan 2"                 = 8.00
+  "Teams Phone Standard"                   = 10.00
+  "Microsoft Teams Phone Standard"         = 10.00
+  "Microsoft Teams Enterprise"             = 8.55
+  "Visio Plan 1"                           = 5.00
+  "Visio Plan 2"                           = 15.00
+  "Planner Plan 1"                         = 10.00
+  "Project Plan 1"                         = 10.00
+  "Planner and Project Plan 3"             = 30.00
+  "Project Plan 3"                         = 30.00
+  "Planner and Project Plan 5"             = 55.00
+  "Project Plan 5"                         = 55.00
+  "Power BI Pro"                           = 14.00
+  "Power BI Premium Per User"              = 24.00
+  "Enterprise Mobility + Security E3"      = 10.60
+  "Enterprise Mobility + Security E5"      = 16.40
+  "Microsoft Defender for Office 365 Plan 1" = 2.00
+  "Microsoft Defender for Office 365 Plan 2" = 5.00
+}
+
+$BuiltInPricingEur = [ordered]@{
+  "Microsoft 365 Business Basic"           = 5.60
+  "Microsoft 365 Business Standard"        = 11.70
+  "Microsoft 365 Business Premium"         = 20.60
+  "Microsoft 365 Apps for business"        = 9.80
+  "Microsoft 365 Apps for enterprise"      = 14.30
+  "Office 365 E1"                          = 9.40
+  "Office 365 Enterprise E1"               = 9.40
+  "Office 365 E3"                          = 25.10
+  "Office 365 Enterprise E3"               = 25.10
+  "Office 365 E5"                          = 41.50
+  "Office 365 Enterprise E5"               = 41.50
+  "Microsoft 365 E3"                       = 37.70
+  "Microsoft 365 E5"                       = 59.70
+  "Exchange Online Plan 1"                 = 3.70
+  "Exchange Online Plan 2"                 = 7.50
+  "Teams Phone Standard"                   = 9.40
+  "Microsoft Teams Phone Standard"         = 9.40
+  "Microsoft Teams Enterprise"             = 8.00
+  "Visio Plan 1"                           = 4.70
+  "Visio Plan 2"                           = 14.10
+  "Planner Plan 1"                         = 9.40
+  "Project Plan 1"                         = 9.40
+  "Planner and Project Plan 3"             = 28.10
+  "Project Plan 3"                         = 28.10
+  "Planner and Project Plan 5"             = 51.50
+  "Project Plan 5"                         = 51.50
+  "Power BI Pro"                           = 13.10
+  "Power BI Premium Per User"              = 22.50
+  "Enterprise Mobility + Security E3"      = 10.00
+  "Enterprise Mobility + Security E5"      = 15.40
+  "Microsoft Defender for Office 365 Plan 1" = 1.80
+  "Microsoft Defender for Office 365 Plan 2" = 4.70
+}
+
+Function Normalize-PlanName {
+  Param([string]$Name)
+  if ([string]::IsNullOrWhiteSpace($Name)) { return "" }
+  return ($Name -replace '\s+', ' ').Trim().ToLowerInvariant()
+}
+
+Function Apply-BuiltInPricing {
+  Param(
+    [hashtable]$PricingMap,
+    [string]$CurrencyCode
+  )
+  $PricingHashTable.Clear()
+  $NormalizedMap = @{}
+  foreach ($key in $PricingMap.Keys) {
+    $NormalizedMap[(Normalize-PlanName $key)] = $PricingMap[$key]
+  }
+
+  foreach ($skuId in $SkuHashTable.Keys) {
+    $displayName = $SkuHashTable[$skuId]
+    $normalizedName = Normalize-PlanName $displayName
+    if ($NormalizedMap.ContainsKey($normalizedName)) {
+      $PricingHashTable[$skuId] = [string]$NormalizedMap[$normalizedName]
+    }
+  }
+
+  $script:Currency = $CurrencyCode
+  return $PricingHashTable.Count
+}
+
 
 # Build SKU lookup hash table (maps SKU IDs to friendly display names)
 ForEach ($Line in $ImportSkus) {
@@ -219,8 +329,27 @@ ForEach ($Line in $ImportSkus) {
 
 # Check if pricing information is available and populate pricing hash table
 $PricingInfoAvailable = $False
+$PricingSourceLabel = "None"
+$PricingMatchedSkus = 0
+$HasCsvPricing = $ImportSkus[0].Price
 
-If ($ImportSkus[0].Price) {
+if ($PricingCurrency -in @("USD", "EUR")) {
+  $PricingMatchedSkus = if ($PricingCurrency -eq "EUR") {
+    Apply-BuiltInPricing -PricingMap $BuiltInPricingEur -CurrencyCode "EUR"
+  } else {
+    Apply-BuiltInPricing -PricingMap $BuiltInPricingUsd -CurrencyCode "USD"
+  }
+
+  if ($PricingMatchedSkus -gt 0) {
+    $PricingInfoAvailable = $True
+    $PricingSourceLabel = "Built-in ($Currency)"
+    Write-Host "Using built-in pricing (Top 25 common licenses) in $Currency" -ForegroundColor Yellow
+    Write-Host "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list" -ForegroundColor Cyan
+  } else {
+    Write-Host "Built-in pricing selected but no SKU matches were found in the tenant list." -ForegroundColor Yellow
+  }
+}
+elseif ($HasCsvPricing) {
   Write-Host "Pricing information detected - cost analysis will be included in reports" -ForegroundColor Green
   $PricingInfoAvailable = $True
   $Global:PricingHashTable = @{}
@@ -236,9 +365,23 @@ If ($ImportSkus[0].Price) {
     [string]$Currency = ($ImportSkus[0].Currency)
     Write-Host "Currency set to: $Currency" -ForegroundColor Cyan
   }
-} Else {
-  Write-Host "No pricing information found - cost analysis will be unavailable" -ForegroundColor Yellow
-  Write-Host "To enable cost analysis, add 'Price' and 'Currency' columns to SkuDataComplete.csv" -ForegroundColor Gray
+
+  $PricingMatchedSkus = $PricingHashTable.Count
+  $PricingSourceLabel = "CSV ($Currency)"
+}
+else {
+  $PricingMatchedSkus = Apply-BuiltInPricing -PricingMap $BuiltInPricingUsd -CurrencyCode "USD"
+
+  if ($PricingMatchedSkus -gt 0) {
+    $PricingInfoAvailable = $True
+    $PricingSourceLabel = "Built-in ($Currency)"
+    Write-Host "No pricing information found in CSV - using built-in USD pricing for top 25 licenses" -ForegroundColor Yellow
+    Write-Host "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list" -ForegroundColor Cyan
+    Write-Host "To enable tenant-specific pricing, add 'Price' and 'Currency' columns to SkuDataComplete.csv" -ForegroundColor Gray
+  } else {
+    Write-Host "No pricing information found - cost analysis will be unavailable" -ForegroundColor Yellow
+    Write-Host "To enable cost analysis, add 'Price' and 'Currency' columns to SkuDataComplete.csv" -ForegroundColor Gray
+  }
 }
 
 Write-Host ""
@@ -598,6 +741,9 @@ If ($PricingInfoAvailable) {
 #region Generate Professional HTML Report with Dark Mode and Charts
 
 # Create the HTML report with advanced features
+$PricingMeta = if ($PricingInfoAvailable) { "Pricing: $PricingSourceLabel" } else { "Pricing: Not available" }
+$PricingCoverageMeta = if ($PricingInfoAvailable) { "$PricingMatchedSkus SKUs priced" } else { "No pricing data" }
+
 $HtmlHead = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -1510,6 +1656,8 @@ $HtmlHead = @"
                 <span class="meta-pill"><i class="fas fa-users"></i> $($Report.Count) Licensed</span>
                 <span class="meta-pill"><i class="fas fa-triangle-exclamation"></i> $DuplicateSKULicenses Duplicates</span>
                 <span class="meta-pill"><i class="fas fa-layer-group"></i> $($SkuReport.Count) SKUs</span>
+                <span class="meta-pill"><i class="fas fa-tags"></i> $PricingCoverageMeta</span>
+                <span class="meta-pill"><i class="fas fa-coins"></i> $PricingMeta</span>
                 <span class="meta-pill"><i class="fas fa-code-branch"></i> v$Version</span>
             </div>
             <div class="brought-by">
@@ -1664,6 +1812,11 @@ If ($PricingInfoAvailable) {
                 <div class="label"><i class="fas fa-user-tag"></i> Average Cost Per User</div>
                 <div class="value">$AverageCostPerUserOutput</div>
                 <div class="subtitle">Per licensed account</div>
+            </div>
+            <div class="stat-card info">
+                <div class="label"><i class="fas fa-tags"></i> Pricing Coverage</div>
+                <div class="value">$PricingMatchedSkus / $($SkuReport.Count)</div>
+                <div class="subtitle">$PricingSourceLabel</div>
             </div>
 "@
 }
