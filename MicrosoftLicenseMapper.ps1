@@ -212,76 +212,73 @@ $ImportSkus = Import-CSV $skuDataPath
 $SkuHashTable = @{}
 $PricingHashTable = @{}
 
-# Built-in top-25 pricing (monthly per user) for USD/EUR
+# Built-in pricing (monthly per user) for USD/EUR
 # NOTE: Pricing is region-dependent and may vary by agreement; override with CSV for tenant-accurate costs.
 $BuiltInPricingUsd = [ordered]@{
-  "Microsoft 365 Business Basic"           = 6.00
-  "Microsoft 365 Business Standard"        = 12.50
-  "Microsoft 365 Business Premium"         = 22.00
-  "Microsoft 365 Apps for business"        = 8.25
-  "Microsoft 365 Apps for enterprise"      = 12.00
-  "Office 365 E1"                          = 10.00
-  "Office 365 Enterprise E1"               = 10.00
-  "Office 365 E3"                          = 23.00
-  "Office 365 Enterprise E3"               = 23.00
-  "Office 365 E5"                          = 38.00
-  "Office 365 Enterprise E5"               = 38.00
-  "Microsoft 365 E3"                       = 36.00
-  "Microsoft 365 E5"                       = 57.00
-  "Exchange Online Plan 1"                 = 4.00
-  "Exchange Online Plan 2"                 = 8.00
-  "Teams Phone Standard"                   = 10.00
-  "Microsoft Teams Phone Standard"         = 10.00
-  "Microsoft Teams Enterprise"             = 8.55
-  "Visio Plan 1"                           = 5.00
-  "Visio Plan 2"                           = 15.00
-  "Planner Plan 1"                         = 10.00
-  "Project Plan 1"                         = 10.00
-  "Planner and Project Plan 3"             = 30.00
-  "Project Plan 3"                         = 30.00
-  "Planner and Project Plan 5"             = 55.00
-  "Project Plan 5"                         = 55.00
-  "Power BI Pro"                           = 14.00
-  "Power BI Premium Per User"              = 24.00
-  "Enterprise Mobility + Security E3"      = 10.60
-  "Enterprise Mobility + Security E5"      = 16.40
-  "Microsoft Defender for Office 365 Plan 1" = 2.00
-  "Microsoft Defender for Office 365 Plan 2" = 5.00
+  "Microsoft 365 Business Basic"             = 6.00
+  "Microsoft 365 Business Standard"          = 12.50
+  "Microsoft 365 Business Premium"           = 22.00
+  "Microsoft 365 Apps for business"          = 8.25
+  "Microsoft 365 E3"                         = 36.00
+  "Microsoft 365 E5"                         = 57.00
+  "Office 365 E1"                            = 10.00
+  "Office 365 Enterprise E1"                 = 10.00
+  "Office 365 E3"                            = 23.00
+  "Office 365 Enterprise E3"                 = 23.00
+  "Office 365 E5"                            = 38.00
+  "Office 365 Enterprise E5"                 = 38.00
+  "Microsoft 365 F1"                         = 2.25
+  "Microsoft 365 F3"                         = 8.00
+  "Microsoft Teams Enterprise"               = 8.55
+  "Microsoft Teams EEA"                      = 8.55
+  "Microsoft Teams Essentials"               = 4.00
+  "Microsoft Teams Premium"                  = 10.00
+  "Teams Phone Standard"                     = 10.00
+  "Microsoft Teams Phone Standard"           = 10.00
+  "Exchange Online Plan 1"                   = 4.00
+  "Exchange Online (Plan 1)"                 = 4.00
+  "Exchange Online Plan 2"                   = 8.00
+  "Exchange Online (Plan 2)"                 = 8.00
+  "Microsoft Entra ID P1"                    = 6.00
+  "Azure Active Directory Premium P1"        = 6.00
+  "Microsoft Entra ID P2"                    = 9.00
+  "Azure Active Directory Premium P2"        = 9.00
+  "Power BI Pro"                             = 14.00
+  "Power BI Premium Per User"                = 24.00
+  "Visio Plan 1"                             = 5.00
+  "Visio Plan 2"                             = 15.00
+  "Planner Plan 1"                           = 10.00
+  "Planner and Project Plan 3"               = 30.00
+  "Planner and Project Plan 5"               = 55.00
 }
 
 $BuiltInPricingEur = [ordered]@{
-  "Microsoft 365 Business Basic"           = 5.60
-  "Microsoft 365 Business Standard"        = 11.70
-  "Microsoft 365 Business Premium"         = 20.60
-  "Microsoft 365 Apps for business"        = 9.80
-  "Microsoft 365 Apps for enterprise"      = 14.30
-  "Office 365 E1"                          = 9.40
-  "Office 365 Enterprise E1"               = 9.40
-  "Office 365 E3"                          = 25.10
-  "Office 365 Enterprise E3"               = 25.10
-  "Office 365 E5"                          = 41.50
-  "Office 365 Enterprise E5"               = 41.50
-  "Microsoft 365 E3"                       = 37.70
-  "Microsoft 365 E5"                       = 59.70
-  "Exchange Online Plan 1"                 = 3.70
-  "Exchange Online Plan 2"                 = 7.50
-  "Teams Phone Standard"                   = 9.40
-  "Microsoft Teams Phone Standard"         = 9.40
-  "Microsoft Teams Enterprise"             = 8.00
-  "Visio Plan 1"                           = 4.70
-  "Visio Plan 2"                           = 14.10
-  "Planner Plan 1"                         = 9.40
-  "Project Plan 1"                         = 9.40
-  "Planner and Project Plan 3"             = 28.10
-  "Project Plan 3"                         = 28.10
-  "Planner and Project Plan 5"             = 51.50
-  "Project Plan 5"                         = 51.50
-  "Power BI Pro"                           = 13.10
-  "Power BI Premium Per User"              = 22.50
-  "Enterprise Mobility + Security E3"      = 10.00
-  "Enterprise Mobility + Security E5"      = 15.40
-  "Microsoft Defender for Office 365 Plan 1" = 1.80
-  "Microsoft Defender for Office 365 Plan 2" = 4.70
+  "Microsoft 365 Business Basic"             = 5.60
+  "Microsoft 365 Business Standard"          = 11.70
+  "Microsoft 365 Business Premium"           = 20.60
+  "Microsoft 365 Apps for business"          = 9.80
+  "Microsoft 365 E3"                         = 37.70
+  "Microsoft 365 E5"                         = 59.70
+  "Office 365 E3"                            = 25.10
+  "Office 365 Enterprise E3"                 = 25.10
+  "Office 365 E5"                            = 41.50
+  "Office 365 Enterprise E5"                 = 41.50
+  "Microsoft Teams Enterprise"               = 8.00
+  "Microsoft Teams EEA"                      = 8.00
+  "Microsoft Teams Premium"                  = 9.40
+  "Exchange Online Plan 1"                   = 3.70
+  "Exchange Online (Plan 1)"                 = 3.70
+  "Exchange Online Plan 2"                   = 7.50
+  "Exchange Online (Plan 2)"                 = 7.50
+  "Microsoft Entra ID P1"                    = 5.60
+  "Azure Active Directory Premium P1"        = 5.60
+  "Microsoft Entra ID P2"                    = 8.40
+  "Azure Active Directory Premium P2"        = 8.40
+  "Visio Plan 1"                             = 4.70
+  "Visio Plan 2"                             = 14.00
+  "Planner Plan 1"                           = 9.40
+  "Planner and Project Plan 3"               = 28.10
+  "Planner and Project Plan 5"               = 51.50
 }
 
 Function Normalize-PlanName {
@@ -343,7 +340,7 @@ if ($PricingCurrency -in @("USD", "EUR")) {
   if ($PricingMatchedSkus -gt 0) {
     $PricingInfoAvailable = $True
     $PricingSourceLabel = "Built-in ($Currency)"
-    Write-Host "Using built-in pricing (Top 25 common licenses) in $Currency" -ForegroundColor Yellow
+    Write-Host "Using built-in pricing (common licenses) in $Currency" -ForegroundColor Yellow
     Write-Host "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list" -ForegroundColor Cyan
   } else {
     Write-Host "Built-in pricing selected but no SKU matches were found in the tenant list." -ForegroundColor Yellow
@@ -375,7 +372,7 @@ else {
   if ($PricingMatchedSkus -gt 0) {
     $PricingInfoAvailable = $True
     $PricingSourceLabel = "Built-in ($Currency)"
-    Write-Host "No pricing information found in CSV - using built-in USD pricing for top 25 licenses" -ForegroundColor Yellow
+    Write-Host "No pricing information found in CSV - using built-in USD pricing for common licenses" -ForegroundColor Yellow
     Write-Host "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list" -ForegroundColor Cyan
     Write-Host "To enable tenant-specific pricing, add 'Price' and 'Currency' columns to SkuDataComplete.csv" -ForegroundColor Gray
   } else {
