@@ -505,6 +505,14 @@ $Inactive60Plus = $Report | Where-Object { $_.Status -like "*60+ days*" -or $_.S
 $Inactive30Plus = $Report | Where-Object { $_.Status -like "*30+ days*" -or $_.Status -like "*60+ days*" -or $_.Status -like "*90+ days*" -or $_.Status -like "*180+ days*" }
 $HighPriorityCleanup = $Report | Where-Object { $_.Status -like "*Cleanup candidate*" -or $_.Status -like "*High priority*" -or $_.'Last Signin' -eq "Never" }
 
+# Department and country analytics (counts only)
+$DepartmentCounts = $Report | Group-Object Department | Where-Object { -not [string]::IsNullOrWhiteSpace($_.Name) } | Sort-Object Count -Descending
+$CountryCounts = $Report | Group-Object Country | Where-Object { -not [string]::IsNullOrWhiteSpace($_.Name) } | Sort-Object Count -Descending
+$TopDepartments = $DepartmentCounts | Select-Object -First 10
+$TopCountries = $CountryCounts | Select-Object -First 10
+$NoDepartmentCount = ($Report | Where-Object { [string]::IsNullOrWhiteSpace($_.Department) }).Count
+$NoCountryCount = ($Report | Where-Object { [string]::IsNullOrWhiteSpace($_.Country) }).Count
+
 # This code grabs the SKU summary for the tenant and uses the data to create a SKU summary usage segment for the HTML report
 $SkuReport = [System.Collections.Generic.List[Object]]::new()
 [array]$SkuSummary = Get-MgSubscribedSku | Select-Object SkuId, ConsumedUnits, PrepaidUnits
@@ -599,7 +607,7 @@ $HtmlHead = @"
     <title>Microsoft 365 License Report - $OrgName</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
     <style>
         * {
             margin: 0;
@@ -670,7 +678,7 @@ $HtmlHead = @"
         }
 
         body {
-            font-family: 'Manrope', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
             font-size: 14px;
             line-height: 1.65;
             color: var(--text-primary);
@@ -765,7 +773,7 @@ $HtmlHead = @"
         }
 
         .header h1 {
-            font-family: 'Fraunces', 'Segoe UI', serif;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
             font-size: 48px;
             font-weight: 600;
             margin-bottom: 12px;
@@ -797,7 +805,7 @@ $HtmlHead = @"
         }
 
         .brand-logo img {
-            height: 40px;
+            height: 38px;
             width: auto;
             filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));
         }
@@ -1493,7 +1501,7 @@ $HtmlHead = @"
     <div class="container">
         <div class="header">
             <div class="brand-logo">
-                <img src="logo-white-text-CAoxNp-z.svg" alt="Brand logo">
+                <img src="https://tycholoke.com/assets/logo-white-text-CAoxNp-z.svg" alt="Brand logo">
             </div>
             <h1><i class="fas fa-chart-line"></i> Microsoft 365 License Report</h1>
             <h2>$OrgName</h2>
@@ -1543,28 +1551,28 @@ $HtmlHead = @"
                 </span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; transition: all 0.3s ease;" onclick="applyFilter('all')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; transition: all 0.3s ease;" onclick="applyFilter('all', this)">
                     <i class="fas fa-list"></i> Show All
                 </button>
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(209, 52, 56, 0.15); color: var(--danger-color); border-color: var(--danger-color); transition: all 0.3s ease;" onclick="applyFilter('never')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(209, 52, 56, 0.15); color: var(--danger-color); border-color: var(--danger-color); transition: all 0.3s ease;" onclick="applyFilter('never', this)">
                     <i class="fas fa-user-slash"></i> Never Logged In <span style="background: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($NeverLoggedIn.Count)</span>
                 </button>
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(209, 52, 56, 0.15); color: var(--danger-color); border-color: var(--danger-color); transition: all 0.3s ease;" onclick="applyFilter('cleanup')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(209, 52, 56, 0.15); color: var(--danger-color); border-color: var(--danger-color); transition: all 0.3s ease;" onclick="applyFilter('cleanup', this)">
                     <i class="fas fa-exclamation-circle"></i> High Priority <span style="background: var(--danger-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($HighPriorityCleanup.Count)</span>
                 </button>
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(251, 191, 36, 0.15); color: var(--warning-color); border-color: var(--warning-color); transition: all 0.3s ease;" onclick="applyFilter('30days')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(251, 191, 36, 0.15); color: var(--warning-color); border-color: var(--warning-color); transition: all 0.3s ease;" onclick="applyFilter('30days', this)">
                     <i class="fas fa-calendar"></i> 30+ Days <span style="background: var(--warning-color); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive30Plus.Count)</span>
                 </button>
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(251, 146, 60, 0.15); color: var(--accent-orange); border-color: var(--accent-orange); transition: all 0.3s ease;" onclick="applyFilter('60days')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(251, 146, 60, 0.15); color: var(--accent-orange); border-color: var(--accent-orange); transition: all 0.3s ease;" onclick="applyFilter('60days', this)">
                     <i class="fas fa-clock"></i> 60+ Days <span style="background: var(--accent-orange); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive60Plus.Count)</span>
                 </button>
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: #ef4444; transition: all 0.3s ease;" onclick="applyFilter('90days')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: #ef4444; transition: all 0.3s ease;" onclick="applyFilter('90days', this)">
                     <i class="fas fa-history"></i> 90+ Days <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive90Plus.Count)</span>
                 </button>
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(220, 38, 38, 0.15); color: #dc2626; border-color: #dc2626; transition: all 0.3s ease;" onclick="applyFilter('180days')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(220, 38, 38, 0.15); color: #dc2626; border-color: #dc2626; transition: all 0.3s ease;" onclick="applyFilter('180days', this)">
                     <i class="fas fa-ban"></i> 180+ Days <span style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$($Inactive180Plus.Count)</span>
                 </button>
-                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border-color: var(--accent-purple); transition: all 0.3s ease;" onclick="applyFilter('duplicates')">
+                <button class="btn btn-secondary filter-btn" style="font-size: 12px; padding: 7px 14px; background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border-color: var(--accent-purple); transition: all 0.3s ease;" onclick="applyFilter('duplicates', this)">
                     <i class="fas fa-copy"></i> Duplicates <span style="background: var(--accent-purple); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 4px;">$DuplicateSKUsAccounts</span>
                 </button>
             </div>
@@ -1627,6 +1635,16 @@ $DashboardHTML = @"
                 <div class="value">$LicenseErrorCount</div>
                 <div class="subtitle">Assignment errors</div>
             </div>
+            <div class="stat-card">
+                <div class="label"><i class="fas fa-building"></i> Departments Tracked</div>
+                <div class="value">$($DepartmentCounts.Count)</div>
+                <div class="subtitle">$NoDepartmentCount without department</div>
+            </div>
+            <div class="stat-card">
+                <div class="label"><i class="fas fa-globe"></i> Countries Tracked</div>
+                <div class="value">$($CountryCounts.Count)</div>
+                <div class="subtitle">$NoCountryCount without country</div>
+            </div>
 "@
 
 # Add pricing cards if available
@@ -1675,6 +1693,14 @@ $DashboardHTML += @"
                     <div class="chart-container">
                         <div class="chart-title"><i class="fas fa-clock"></i> Inactive Account Analysis</div>
                         <canvas id="inactiveAccountsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title"><i class="fas fa-building"></i> Top Departments by Accounts</div>
+                        <canvas id="topDepartmentsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title"><i class="fas fa-globe"></i> Top Countries by Accounts</div>
+                        <canvas id="topCountriesChart"></canvas>
                     </div>
 "@
 
@@ -1823,6 +1849,11 @@ $CountryChartLabels = ""
 $CountryChartValues = ""
 $TopCostlyLicensesLabels = ""
 $TopCostlyLicensesValues = ""
+
+$TopDepartmentLabels = ($TopDepartments | ForEach-Object { """$($_.Name)""" }) -join ","
+$TopDepartmentValues = ($TopDepartments | ForEach-Object { $_.Count }) -join ","
+$TopCountryLabels = ($TopCountries | ForEach-Object { """$($_.Name)""" }) -join ","
+$TopCountryValues = ($TopCountries | ForEach-Object { $_.Count }) -join ","
 
 If ($PricingInfoAvailable) {
   $DeptChartLabels = ($DepartmentReport | ForEach-Object { """$($_.Department)""" }) -join ","
@@ -2163,6 +2194,106 @@ $ScriptBlock = @"
                                     stepSize: 1
                                 },
                                 grid: { color: gridColor }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Top Departments by Accounts
+            const topDepartmentsCtx = document.getElementById('topDepartmentsChart');
+            if (topDepartmentsCtx && [$TopDepartmentValues].length > 0) {
+                const deptColors = [$TopDepartmentValues].map((_, i) => colors[i % colors.length]);
+                window.chartInstances.topDepartments = new Chart(topDepartmentsCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [$TopDepartmentLabels],
+                        datasets: [{
+                            label: 'Accounts',
+                            data: [$TopDepartmentValues],
+                            backgroundColor: deptColors,
+                            borderColor: deptColors.map(c => c.replace('0.9)', '1)')),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Accounts: ' + context.parsed.x;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                ticks: {
+                                    color: textColor,
+                                    font: { size: 10 }
+                                },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Top Countries by Accounts
+            const topCountriesCtx = document.getElementById('topCountriesChart');
+            if (topCountriesCtx && [$TopCountryValues].length > 0) {
+                const countryColors = [$TopCountryValues].map((_, i) => colors[i % colors.length]);
+                window.chartInstances.topCountries = new Chart(topCountriesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [$TopCountryLabels],
+                        datasets: [{
+                            label: 'Accounts',
+                            data: [$TopCountryValues],
+                            backgroundColor: countryColors,
+                            borderColor: countryColors.map(c => c.replace('0.9)', '1)')),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Accounts: ' + context.parsed.x;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: { color: textColor },
+                                grid: { color: gridColor }
+                            },
+                            y: {
+                                ticks: {
+                                    color: textColor,
+                                    font: { size: 10 }
+                                },
+                                grid: { display: false }
                             }
                         }
                     }
@@ -2519,7 +2650,7 @@ $ScriptBlock += @"
         // ========================================
         // QUICK FILTER FUNCTIONALITY
         // ========================================
-        function applyFilter(filterType) {
+        function applyFilter(filterType, buttonEl) {
             const userTable = document.getElementById('userTable');
             if (!userTable) return;
 
@@ -2640,10 +2771,9 @@ $ScriptBlock += @"
                 btn.style.boxShadow = 'none';
             });
             if (filterType !== 'all') {
-                const activeBtn = event?.target?.closest('button');
-                if (activeBtn) {
-                    activeBtn.style.transform = 'scale(1.05)';
-                    activeBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                if (buttonEl) {
+                    buttonEl.style.transform = 'scale(1.05)';
+                    buttonEl.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
                 }
             }
         }
