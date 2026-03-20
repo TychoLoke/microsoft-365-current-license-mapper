@@ -124,7 +124,7 @@ Function Get-LicenseCosts {
       }
     }
     Catch {
-      Write-Host ("Warning: Unable to find pricing for license SKU {0}" -f $License) -ForegroundColor Yellow
+      Write-Warning ("Unable to find pricing for license SKU {0}" -f $License)
     }
   }
 
@@ -154,7 +154,7 @@ Function Get-LicenseCostsMonthly {
       }
     }
     Catch {
-      Write-Host ("Warning: Unable to find pricing for license SKU {0}" -f $License) -ForegroundColor Yellow
+      Write-Warning ("Unable to find pricing for license SKU {0}" -f $License)
     }
   }
 
@@ -170,6 +170,7 @@ $Version = "2.1"
 
 # Default currency (can be overridden by CSV pricing or PricingCurrency selection)
 [string]$Currency = "USD"
+$PricingHashTable = @{}
 
 Write-Host "===============================================" -ForegroundColor Cyan
 Write-Host "  Microsoft 365 License Mapper v$Version" -ForegroundColor Cyan
@@ -311,10 +312,10 @@ ForEach ($Line in $ImportSkus) {
     If (-not $SkuHashTable.ContainsKey([string]$Line.SkuId)) {
       $SkuHashTable.Add([string]$Line.SkuId, [string]$Line.DisplayName)
     } Else {
-      Write-Host ("Warning: Duplicate SKU ID detected and skipped: " + $Line.SkuId) -ForegroundColor Yellow
+      Write-Warning ("Duplicate SKU ID detected and skipped: {0}" -f $Line.SkuId)
     }
   } Else {
-    Write-Host "Warning: Found an entry with null or empty SkuId, skipping..." -ForegroundColor Yellow
+    Write-Warning "Found an entry with null or empty SkuId, skipping..."
   }
 }
 
@@ -347,7 +348,7 @@ if ($PricingCurrency -in @("USD", "EUR")) {
 elseif ($HasCsvPricing) {
   Write-Host "Pricing information detected - cost analysis will be included in reports" -ForegroundColor Green
   $PricingInfoAvailable = $True
-  $Global:PricingHashTable = @{}
+  $PricingHashTable = @{}
 
   ForEach ($Line in $ImportSkus) {
     If (-not [string]::IsNullOrWhiteSpace($Line.SkuId) -and -not [string]::IsNullOrWhiteSpace($Line.Price)) {
@@ -485,7 +486,7 @@ ForEach ($License in $UserLicenses) {
             }
             Else {
                 # Handle the case where the plan is not found or ServicePlanHashTable is null
-                Write-Host "Warning: ServicePlanHashTable is null or does not contain the plan: $DisabledPlan"
+                Write-Warning "ServicePlanHashTable is null or does not contain the plan: $DisabledPlan"
                 # Optionally collect these for later review or logging
                 $DisabledPlans += $DisabledPlan
             }

@@ -147,8 +147,7 @@ if (-not (Get-Command Get-MgSubscribedSku -ErrorAction SilentlyContinue)) {
     Write-Host "  Uninstall-Module Microsoft.Graph -AllVersions" -ForegroundColor White
     Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
     Write-Host ""
-    Read-Host "Press Enter to exit"
-    Exit
+    exit 1
 }
 Write-Host "All required cmdlets are available!" -ForegroundColor Green
 
