@@ -164,64 +164,59 @@ try {
 
 #region Import Microsoft Reference CSV
 
-Write-Host "Importing Microsoft's product and service plan reference data..." -ForegroundColor Yellow
+Write-InfoMessage "Importing Microsoft's product and service plan reference data..."
 
 if (-Not (Test-Path $ProductCsvPath)) {
-    Write-Host "Error: CSV file not found at $ProductCsvPath" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Please download the file from:" -ForegroundColor Yellow
-    Write-Host "https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference" -ForegroundColor Cyan
-    Write-Host "and save it to: $ProductCsvPath" -ForegroundColor Yellow
+    Write-Error "CSV file not found at $ProductCsvPath"
+    Write-InfoMessage "Download the reference CSV from https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference and save it to $ProductCsvPath"
     Disconnect-MgGraph
-    Exit
+    exit 1
 }
 
 try {
     [array]$Identifiers = Import-Csv -Path $ProductCsvPath
-    Write-Host "Successfully imported $($Identifiers.Count) reference entries!" -ForegroundColor Green
-    Write-Host ""
+    Write-SuccessMessage "Successfully imported $($Identifiers.Count) reference entries!"
+    Write-Output ""
 } catch {
-    Write-Host "Error: Failed to import CSV file." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Error "Failed to import CSV file. $($_.Exception.Message)"
     Disconnect-MgGraph
-    Exit
+    exit 1
 }
 
 #endregion
 
 #region Process SKU and Service Plan Mappings
 
-Write-Host "Processing SKU and Service Plan mappings..." -ForegroundColor Yellow
+Write-InfoMessage "Processing SKU and Service Plan mappings..."
 
 # Create lookup arrays with friendly display names
 [array]$SKU_friendly = $Identifiers | Select-Object GUID, String_Id, Product_Display_Name -Unique
 [array]$SP_friendly = $Identifiers | Select-Object Service_Plan_Id, Service_Plan_Name, Service_Plans_Included_Friendly_Names -Unique
 
-Write-Host "Created lookup tables for $($SKU_friendly.Count) SKUs and $($SP_friendly.Count) service plans" -ForegroundColor Green
-Write-Host ""
+Write-SuccessMessage "Created lookup tables for $($SKU_friendly.Count) SKUs and $($SP_friendly.Count) service plans"
+Write-Output ""
 
 #endregion
 
 #region Retrieve Tenant SKU Data
 
-Write-Host "Retrieving subscribed SKUs from your Microsoft 365 tenant..." -ForegroundColor Yellow
+Write-InfoMessage "Retrieving subscribed SKUs from your Microsoft 365 tenant..."
 
 try {
     [Array]$Skus = Get-MgSubscribedSku -ErrorAction Stop
-    Write-Host "Successfully retrieved $($Skus.Count) SKUs from tenant!" -ForegroundColor Green
-    Write-Host ""
+    Write-SuccessMessage "Successfully retrieved $($Skus.Count) SKUs from tenant!"
+    Write-Output ""
 } catch {
-    Write-Host "Error: Unable to fetch SKU data from Microsoft Graph." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Error "Unable to fetch SKU data from Microsoft Graph. $($_.Exception.Message)"
     Disconnect-MgGraph
-    Exit
+    exit 1
 }
 
 #endregion
 
 #region Export SKU Data to CSV
 
-Write-Host "Exporting SKU data with friendly names..." -ForegroundColor Yellow
+Write-InfoMessage "Exporting SKU data with friendly names..."
 
 if (-not (Test-Path -Path $OutputDirectory)) {
     New-Item -Path $OutputDirectory -ItemType Directory -Force | Out-Null
@@ -235,21 +230,20 @@ try {
             ($SKU_friendly | Where-Object -Property GUID -eq $_.SkuId).Product_Display_Name
         }} | Export-Csv -NoTypeInformation -Path $skuCsvPath
 
-    Write-Host "SKU data exported successfully!" -ForegroundColor Green
-    Write-Host "Location: $skuCsvPath" -ForegroundColor Cyan
-    Write-Host ""
+    Write-SuccessMessage "SKU data exported successfully!"
+    Write-InfoMessage "Location: $skuCsvPath"
+    Write-Output ""
 } catch {
-    Write-Host "Error: Failed to export SKU data." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Error "Failed to export SKU data. $($_.Exception.Message)"
     Disconnect-MgGraph
-    Exit
+    exit 1
 }
 
 #endregion
 
 #region Build and Export Service Plan Data
 
-Write-Host "Building service plan data with friendly names..." -ForegroundColor Yellow
+Write-InfoMessage "Building service plan data with friendly names..."
 
 # Build comprehensive service plan list from all SKUs
 $SPData = [System.Collections.Generic.List[Object]]::new()
@@ -267,44 +261,43 @@ ForEach ($S in $Skus) {
     }
 }
 
-Write-Host "Processed $($SPData.Count) service plan entries" -ForegroundColor Green
+Write-SuccessMessage "Processed $($SPData.Count) service plan entries"
 
 $servicePlanCsvPath = Join-Path -Path $OutputDirectory -ChildPath "ServicePlanDataComplete.csv"
 
 try {
     $SPData | Sort-Object ServicePlanId -Unique | Export-Csv -NoTypeInformation -Path $servicePlanCsvPath
-    Write-Host "Service Plan data exported successfully!" -ForegroundColor Green
-    Write-Host "Location: $servicePlanCsvPath" -ForegroundColor Cyan
-    Write-Host ""
+    Write-SuccessMessage "Service Plan data exported successfully!"
+    Write-InfoMessage "Location: $servicePlanCsvPath"
+    Write-Output ""
 } catch {
-    Write-Host "Error: Failed to export Service Plan data." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Error "Failed to export Service Plan data. $($_.Exception.Message)"
     Disconnect-MgGraph
-    Exit
+    exit 1
 }
 
 #endregion
 
 #region Completion
 
-Write-Host "===============================================" -ForegroundColor Green
-Write-Host "    CSV Generation Completed Successfully!" -ForegroundColor Green
-Write-Host "===============================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "Generated Files:" -ForegroundColor Cyan
-Write-Host "  1. SKU Data:          $skuCsvPath" -ForegroundColor White
-Write-Host "  2. Service Plan Data: $servicePlanCsvPath" -ForegroundColor White
-Write-Host ""
-Write-Host "Next Steps:" -ForegroundColor Cyan
-Write-Host "  1. (Optional) Edit SkuDataComplete.csv to add pricing information:" -ForegroundColor Yellow
-Write-Host "     - Add a 'Price' column with monthly license costs" -ForegroundColor Gray
-Write-Host "     - Add a 'Currency' column (e.g., USD, EUR, GBP)" -ForegroundColor Gray
-Write-Host "  2. Run MicrosoftLicenseMapper.ps1 to generate license reports" -ForegroundColor Yellow
-Write-Host ""
+Write-SuccessMessage "==============================================="
+Write-SuccessMessage "    CSV Generation Completed Successfully!"
+Write-SuccessMessage "==============================================="
+Write-Output ""
+Write-InfoMessage "Generated Files:"
+Write-InfoMessage "  1. SKU Data:          $skuCsvPath"
+Write-InfoMessage "  2. Service Plan Data: $servicePlanCsvPath"
+Write-Output ""
+Write-InfoMessage "Next Steps:"
+Write-InfoMessage "  1. (Optional) Edit SkuDataComplete.csv to add pricing information:"
+Write-InfoMessage "     - Add a 'Price' column with monthly license costs"
+Write-InfoMessage "     - Add a 'Currency' column (e.g., USD, EUR, GBP)"
+Write-InfoMessage "  2. Run MicrosoftLicenseMapper.ps1 to generate license reports"
+Write-Output ""
 
 Disconnect-MgGraph
-Write-Host "Disconnected from Microsoft Graph." -ForegroundColor Green
-Write-Host ""
+Write-SuccessMessage "Disconnected from Microsoft Graph."
+Write-Output ""
 
 #endregion
 
