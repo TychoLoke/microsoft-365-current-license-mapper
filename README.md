@@ -1,5 +1,7 @@
 # Microsoft 365 Current License Mapper
 
+[![Release](https://img.shields.io/github/v/release/TychoLoke/microsoft-365-current-license-mapper)](https://github.com/TychoLoke/microsoft-365-current-license-mapper/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/TychoLoke/microsoft-365-current-license-mapper/powershell-ci.yml?branch=main)](https://github.com/TychoLoke/microsoft-365-current-license-mapper/actions/workflows/powershell-ci.yml)
 [![PowerShell](https://img.shields.io/badge/PowerShell-7.0%2B-blue.svg)](https://github.com/PowerShell/PowerShell)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
