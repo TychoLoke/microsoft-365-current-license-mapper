@@ -65,24 +65,24 @@ Param(
   [string]$PricingCurrency = "Auto"
 )
 
+function Write-InfoMessage {
+  param([string]$Message)
+  Write-Information $Message -InformationAction Continue
+}
+
+function Write-SuccessMessage {
+  param([string]$Message)
+  Write-Information $Message -InformationAction Continue
+}
+
 #region PowerShell Version Check
 
 # Verify PowerShell 7.0 or higher
 if ($PSVersionTable.PSVersion.Major -lt 7) {
-    Write-Host "===============================================" -ForegroundColor Red
-    Write-Host "   PowerShell Version Error" -ForegroundColor Red
-    Write-Host "===============================================" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "This script requires PowerShell 7.0 or higher." -ForegroundColor Yellow
-    Write-Host "Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Please download and install PowerShell 7 from:" -ForegroundColor Cyan
-    Write-Host "https://github.com/PowerShell/PowerShell/releases" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Or install via command:" -ForegroundColor Cyan
-    Write-Host "  winget install Microsoft.PowerShell" -ForegroundColor White
-    Write-Host ""
-    Exit 1
+    Write-Error "This script requires PowerShell 7.0 or higher. Current version: $($PSVersionTable.PSVersion)"
+    Write-InfoMessage "Download PowerShell from https://github.com/PowerShell/PowerShell/releases"
+    Write-InfoMessage "Or install via command: winget install Microsoft.PowerShell"
+    exit 1
 }
 
 #endregion
@@ -172,10 +172,10 @@ $Version = "2.1"
 [string]$Currency = "USD"
 $PricingHashTable = @{}
 
-Write-Host "===============================================" -ForegroundColor Cyan
-Write-Host "  Microsoft 365 License Mapper v$Version" -ForegroundColor Cyan
-Write-Host "===============================================" -ForegroundColor Cyan
-Write-Host ""
+Write-InfoMessage "==============================================="
+Write-InfoMessage "  Microsoft 365 License Mapper v$Version"
+Write-InfoMessage "==============================================="
+Write-Output ""
 
 # File paths provided via parameters
 
@@ -186,54 +186,49 @@ $UnlicensedAccounts = 0
 
 #region Microsoft Graph Connection
 
-Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Yellow
-Write-Host "You will be prompted to sign in with your Microsoft 365 admin account." -ForegroundColor Gray
-Write-Host ""
+Write-InfoMessage "Connecting to Microsoft Graph..."
+Write-InfoMessage "You will be prompted to sign in with your Microsoft 365 admin account."
+Write-Output ""
 
 Try {
   Connect-MgGraph -Scopes @("Directory.Read.All", "User.Read.All", "AuditLog.Read.All", "Organization.Read.All") -NoWelcome -ErrorAction Stop
-  Write-Host "Successfully connected to Microsoft Graph!" -ForegroundColor Green
-  Write-Host ""
+  Write-SuccessMessage "Successfully connected to Microsoft Graph!"
+  Write-Output ""
 }
 Catch {
-  Write-Host "Failed to connect to Microsoft Graph." -ForegroundColor Red
-  Write-Host "Error: $_" -ForegroundColor Red
-  Write-Host ""
-  Write-Host "Please ensure you have:" -ForegroundColor Yellow
-  Write-Host "  - Valid Microsoft 365 admin credentials" -ForegroundColor Yellow
-  Write-Host "  - Appropriate permissions (Global Admin, Global Reader, or License Admin)" -ForegroundColor Yellow
-  Write-Host "  - Microsoft Graph PowerShell SDK installed" -ForegroundColor Yellow
-  Exit
+  Write-Error "Failed to connect to Microsoft Graph. $($_.Exception.Message)"
+  Write-InfoMessage "Please ensure you have valid Microsoft 365 admin credentials, appropriate permissions, and the Microsoft Graph PowerShell SDK installed."
+  exit 1
 }
 
 #endregion
 
 #region Validate Required Files
 
-Write-Host "Validating required CSV files..." -ForegroundColor Yellow
+Write-InfoMessage "Validating required CSV files..."
 
 If ((Test-Path $skuDataPath) -eq $False) {
-  Write-Host ("Can't find the product data file ({0}). Exiting..." -f $skuDataPath) -ForegroundColor Red
-  Write-Host "Please run MicrosoftLicenseMapperCSV.ps1 first to generate the required CSV files." -ForegroundColor Yellow
+  Write-Error ("Can't find the product data file ({0})." -f $skuDataPath)
+  Write-InfoMessage "Please run MicrosoftLicenseMapperCSV.ps1 first to generate the required CSV files."
   Disconnect-MgGraph
-  Exit
+  exit 1
 }
 
 If ((Test-Path $servicePlanPath) -eq $False) {
-  Write-Host ("Can't find the service plan data file ({0}). Exiting..." -f $servicePlanPath) -ForegroundColor Red
-  Write-Host "Please run MicrosoftLicenseMapperCSV.ps1 first to generate the required CSV files." -ForegroundColor Yellow
+  Write-Error ("Can't find the service plan data file ({0})." -f $servicePlanPath)
+  Write-InfoMessage "Please run MicrosoftLicenseMapperCSV.ps1 first to generate the required CSV files."
   Disconnect-MgGraph
-  Exit
+  exit 1
 }
 
-Write-Host "Required files found!" -ForegroundColor Green
-Write-Host ""
+Write-SuccessMessage "Required files found!"
+Write-Output ""
 
 #endregion
 
 #region Load and Process SKU Data
 
-Write-Host "Loading SKU and pricing data..." -ForegroundColor Yellow
+Write-InfoMessage "Loading SKU and pricing data..."
 
 # Import SKU data from CSV
 $ImportSkus = Import-CSV $skuDataPath

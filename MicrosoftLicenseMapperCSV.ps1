@@ -52,24 +52,24 @@ param(
     [string]$OutputDirectory = "C:\temp"
 )
 
+function Write-InfoMessage {
+    param([string]$Message)
+    Write-Information $Message -InformationAction Continue
+}
+
+function Write-SuccessMessage {
+    param([string]$Message)
+    Write-Information $Message -InformationAction Continue
+}
+
 #region PowerShell Version Check
 
 # Verify PowerShell 7.0 or higher
 if ($PSVersionTable.PSVersion.Major -lt 7) {
-    Write-Host "===============================================" -ForegroundColor Red
-    Write-Host "   PowerShell Version Error" -ForegroundColor Red
-    Write-Host "===============================================" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "This script requires PowerShell 7.0 or higher." -ForegroundColor Yellow
-    Write-Host "Current version: $($PSVersionTable.PSVersion)" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "Please download and install PowerShell 7 from:" -ForegroundColor Cyan
-    Write-Host "https://github.com/PowerShell/PowerShell/releases" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Or install via command:" -ForegroundColor Cyan
-    Write-Host "  winget install Microsoft.PowerShell" -ForegroundColor White
-    Write-Host ""
-    Exit 1
+    Write-Error "This script requires PowerShell 7.0 or higher. Current version: $($PSVersionTable.PSVersion)"
+    Write-InfoMessage "Download PowerShell from https://github.com/PowerShell/PowerShell/releases"
+    Write-InfoMessage "Or install via command: winget install Microsoft.PowerShell"
+    exit 1
 }
 
 #endregion
@@ -79,101 +79,85 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 # Error handling preference - stop on any error
 $ErrorActionPreference = "Stop"
 
-Write-Host "===============================================" -ForegroundColor Cyan
-Write-Host "  Microsoft 365 SKU/Service Plan Data Export" -ForegroundColor Cyan
-Write-Host "===============================================" -ForegroundColor Cyan
-Write-Host ""
+Write-InfoMessage "==============================================="
+Write-InfoMessage "  Microsoft 365 SKU/Service Plan Data Export"
+Write-InfoMessage "==============================================="
+Write-Output ""
 
 #endregion
 
 #region Verify Microsoft Graph Module
 
-Write-Host "Checking for Microsoft Graph PowerShell module..." -ForegroundColor Yellow
+Write-InfoMessage "Checking for Microsoft Graph PowerShell module..."
 
 if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
-    Write-Host "Microsoft Graph module not found. Installing..." -ForegroundColor Yellow
+    Write-InfoMessage "Microsoft Graph module not found. Installing..."
     try {
         Install-Module Microsoft.Graph -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop
-        Write-Host "Microsoft Graph module installed successfully!" -ForegroundColor Green
+        Write-SuccessMessage "Microsoft Graph module installed successfully!"
     } catch {
-        Write-Host "Error: Failed to install Microsoft Graph module." -ForegroundColor Red
-        Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host ""
+        Write-Error "Failed to install Microsoft Graph module. $($_.Exception.Message)"
+        Write-Output ""
 
         # Check if this is an execution policy issue
         if ($_.Exception.Message -match "not digitally signed" -or $_.Exception.Message -match "execution policy") {
-            Write-Host "This appears to be a PowerShell execution policy issue." -ForegroundColor Yellow
-            Write-Host ""
-            Write-Host "To resolve this, run PowerShell as Administrator and execute:" -ForegroundColor Cyan
-            Write-Host "  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser" -ForegroundColor White
-            Write-Host ""
-            Write-Host "Alternatively, install the module manually:" -ForegroundColor Cyan
-            Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
+            Write-InfoMessage "This appears to be a PowerShell execution policy issue."
+            Write-Output ""
+            Write-InfoMessage "To resolve this, run: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser"
+            Write-Output ""
+            Write-InfoMessage "Alternatively, install manually: Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck"
         } else {
-            Write-Host "Please install manually: Install-Module Microsoft.Graph -Scope CurrentUser" -ForegroundColor Yellow
+            Write-InfoMessage "Please install manually: Install-Module Microsoft.Graph -Scope CurrentUser"
         }
 
-        Write-Host ""
-        Exit
+        Write-Output ""
+        exit 1
     }
 } else {
-    Write-Host "Microsoft Graph module found!" -ForegroundColor Green
+    Write-SuccessMessage "Microsoft Graph module found!"
 }
 
 # Import the required Microsoft Graph modules
-Write-Host "Loading Microsoft Graph modules..." -ForegroundColor Yellow
+Write-InfoMessage "Loading Microsoft Graph modules..."
 try {
     Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
     Import-Module Microsoft.Graph.Identity.DirectoryManagement -ErrorAction Stop
-    Write-Host "Microsoft Graph modules loaded successfully!" -ForegroundColor Green
+    Write-SuccessMessage "Microsoft Graph modules loaded successfully!"
 } catch {
-    Write-Host "Error: Failed to load Microsoft Graph modules." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "The module may not be properly installed. Please try:" -ForegroundColor Yellow
-    Write-Host "  Uninstall-Module Microsoft.Graph -AllVersions" -ForegroundColor White
-    Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
-    Write-Host ""
-    Exit
+    Write-Error "Failed to load Microsoft Graph modules. $($_.Exception.Message)"
+    Write-InfoMessage "The module may not be properly installed. Try reinstalling Microsoft.Graph."
+    Write-Output ""
+    exit 1
 }
 
 # Verify that the required cmdlets are available
-Write-Host "Verifying required cmdlets..." -ForegroundColor Yellow
+Write-InfoMessage "Verifying required cmdlets..."
 if (-not (Get-Command Get-MgSubscribedSku -ErrorAction SilentlyContinue)) {
-    Write-Host "Error: Get-MgSubscribedSku cmdlet is not available." -ForegroundColor Red
-    Write-Host "The Microsoft Graph module may not be properly installed." -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Please reinstall the module:" -ForegroundColor Yellow
-    Write-Host "  Uninstall-Module Microsoft.Graph -AllVersions" -ForegroundColor White
-    Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
-    Write-Host ""
+    Write-Error "Get-MgSubscribedSku cmdlet is not available. The Microsoft Graph module may not be properly installed."
+    Write-InfoMessage "Please reinstall Microsoft.Graph."
+    Write-Output ""
     exit 1
 }
-Write-Host "All required cmdlets are available!" -ForegroundColor Green
+Write-SuccessMessage "All required cmdlets are available!"
 
-Write-Host ""
+Write-Output ""
 
 #endregion
 
 #region Microsoft Graph Connection
 
-Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Yellow
-Write-Host "You will be prompted to sign in with your Microsoft 365 admin account." -ForegroundColor Gray
-Write-Host ""
+Write-InfoMessage "Connecting to Microsoft Graph..."
+Write-InfoMessage "You will be prompted to sign in with your Microsoft 365 admin account."
+Write-Output ""
 
 try {
     Connect-MgGraph -Scopes "Directory.Read.All" -NoWelcome -ErrorAction Stop
-    Write-Host "Successfully connected to Microsoft Graph!" -ForegroundColor Green
-    Write-Host ""
+    Write-SuccessMessage "Successfully connected to Microsoft Graph!"
+    Write-Output ""
 } catch {
-    Write-Host "Error: Failed to connect to Microsoft Graph." -ForegroundColor Red
-    Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Please ensure:" -ForegroundColor Yellow
-    Write-Host "  - You have valid Microsoft 365 admin credentials" -ForegroundColor Yellow
-    Write-Host "  - Your account has Directory.Read.All permissions" -ForegroundColor Yellow
-    Write-Host "  - MFA is properly configured if required" -ForegroundColor Yellow
-    Exit
+    Write-Error "Failed to connect to Microsoft Graph. $($_.Exception.Message)"
+    Write-InfoMessage "Please ensure you have valid Microsoft 365 admin credentials, Directory.Read.All permissions, and MFA configured if required."
+    exit 1
 }
 
 #endregion
