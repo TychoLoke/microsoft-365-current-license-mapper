@@ -6,6 +6,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
+- [Quick Start](#quick-start)
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -22,6 +23,26 @@
 ## Overview
 
 The Microsoft 365 Current License Mapper is a comprehensive PowerShell solution designed for system administrators and IT professionals to efficiently audit, map, and manage Microsoft 365 licenses within their organizations. This tool provides detailed insights into license allocation, costs, and usage patterns, enabling better resource optimization and cost management.
+
+## Quick Start
+
+If you want the shortest working path:
+
+1. Download Microsoft's licensing reference CSV and save it locally.
+2. Run `MicrosoftLicenseMapperCSV.ps1` to generate the tenant-specific SKU and service plan files.
+3. Run `MicrosoftLicenseMapper.ps1` to generate the CSV and HTML reports.
+
+```powershell
+.\MicrosoftLicenseMapperCSV.ps1 `
+  -ProductCsvPath "C:\Temp\Product names and service plan identifiers for licensing.csv" `
+  -OutputDirectory "C:\Temp"
+
+.\MicrosoftLicenseMapper.ps1 `
+  -SkuDataPath "C:\Temp\SkuDataComplete.csv" `
+  -ServicePlanPath "C:\Temp\ServicePlanDataComplete.csv" `
+  -CSVOutputFile "C:\Temp\Microsoft365LicensesReport.csv" `
+  -HtmlReportFile "C:\Temp\Microsoft365LicensesReport.html"
+```
 
 ## Features
 
@@ -68,8 +89,9 @@ Before using this tool, ensure you have the following:
   - User Administrator
 - **Microsoft Graph API Permissions**:
   - `Directory.Read.All`
-  - `Directory.AccessAsUser.All` (for the main reporting script)
+  - `User.Read.All`
   - `AuditLog.Read.All` (for sign-in activity data)
+  - `Organization.Read.All`
 - **Storage**: Writable access to `C:\temp\` directory (or modify script paths as needed)
 - **CSV Reference File**: Download the "Product names and service plan identifiers for licensing" CSV from [Microsoft's official documentation](https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference)
 
@@ -104,7 +126,9 @@ Before generating license reports, you need to create reference CSV files contai
 
 2. **Run the CSV Preparation Script**:
    ```powershell
-   .\MicrosoftLicenseMapperCSV.ps1
+   .\MicrosoftLicenseMapperCSV.ps1 `
+     -ProductCsvPath "C:\Temp\Product names and service plan identifiers for licensing.csv" `
+     -OutputDirectory "C:\Temp"
    ```
 
 3. **What This Script Does**:
@@ -132,7 +156,9 @@ After preparing your CSV files, you can now generate comprehensive license repor
 
 2. **Run the License Mapping Script**:
    ```powershell
-   .\MicrosoftLicenseMapper.ps1
+   .\MicrosoftLicenseMapper.ps1 `
+     -SkuDataPath "C:\Temp\SkuDataComplete.csv" `
+     -ServicePlanPath "C:\Temp\ServicePlanDataComplete.csv"
    ```
 
 3. **Authentication**:
@@ -149,21 +175,21 @@ After preparing your CSV files, you can now generate comprehensive license repor
 
 ### Customizing File Paths
 
-By default, the scripts use `C:\temp\` for all input and output files. To use different paths, modify the following variables in each script:
+Both scripts support parameter-based paths, so you usually do not need to edit the files directly.
 
-**In `MicrosoftLicenseMapperCSV.ps1`**:
+**`MicrosoftLicenseMapperCSV.ps1`** supports:
 ```powershell
-$csvPath = "C:\temp\Product names and service plan identifiers for licensing.csv"
-$skuCsvPath = "C:\temp\SkuDataComplete.csv"
-$servicePlanCsvPath = "C:\Temp\ServicePlanDataComplete.csv"
+-ProductCsvPath
+-OutputDirectory
 ```
 
-**In `MicrosoftLicenseMapper.ps1`**:
+**`MicrosoftLicenseMapper.ps1`** supports:
 ```powershell
-$SkuDataPath = "C:\temp\SkuDataComplete.csv"
-$ServicePlanPath = "C:\temp\ServicePlanDataComplete.csv"
-$CSVOutputFile = "c:\temp\Microsoft365LicensesReport.CSV"
-$HtmlReportFile = "c:\temp\Microsoft365LicensesReport.html"
+-SkuDataPath
+-ServicePlanPath
+-CSVOutputFile
+-HtmlReportFile
+-PricingCurrency
 ```
 
 ### Adding Pricing Information

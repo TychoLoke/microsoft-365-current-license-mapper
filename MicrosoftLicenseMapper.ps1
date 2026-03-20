@@ -32,7 +32,7 @@
 
     .NOTES
     Author: Tycho Löke
-    Copyright: (c) 2026 Tycho Löke. All rights reserved.
+    Copyright: (c) 2026 Tycho Löke
     Website: https://tycholoke.com
     Portfolio: https://currentcloud.net
     Version: 2.1
@@ -49,9 +49,8 @@
     https://tycholoke.com
 
     .COPYRIGHT
-    Copyright (c) 2026 Tycho Löke (tycholoke.com). All rights reserved.
-    This script is provided as-is without warranty. Unauthorized redistribution
-    or modification without attribution is prohibited.
+    Copyright (c) 2026 Tycho Löke (tycholoke.com).
+    This script is provided as-is without warranty.
 #>
 
 #requires -Version 7.0
@@ -191,7 +190,7 @@ Write-Host "You will be prompted to sign in with your Microsoft 365 admin accoun
 Write-Host ""
 
 Try {
-  Connect-MgGraph -Scope "Directory.AccessAsUser.All, Directory.Read.All, AuditLog.Read.All" -NoWelcome -ErrorAction Stop
+  Connect-MgGraph -Scopes @("Directory.Read.All", "User.Read.All", "AuditLog.Read.All", "Organization.Read.All") -NoWelcome -ErrorAction Stop
   Write-Host "Successfully connected to Microsoft Graph!" -ForegroundColor Green
   Write-Host ""
 }

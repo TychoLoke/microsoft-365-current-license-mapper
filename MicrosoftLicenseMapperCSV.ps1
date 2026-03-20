@@ -16,8 +16,11 @@
        - SkuDataComplete.csv: SKU information with display names
        - ServicePlanDataComplete.csv: Service plan information with friendly names
 
-    .PARAMETER None
-    This script uses hardcoded file paths that can be modified in the configuration section
+    .PARAMETER ProductCsvPath
+    Path to Microsoft's "Product names and service plan identifiers for licensing" CSV file.
+
+    .PARAMETER OutputDirectory
+    Directory where the generated SKU and service plan CSV files will be written.
 
     .EXAMPLE
     .\MicrosoftLicenseMapperCSV.ps1
@@ -42,6 +45,12 @@
 #>
 
 #requires -Version 7.0
+
+[CmdletBinding()]
+param(
+    [string]$ProductCsvPath = "C:\temp\Product names and service plan identifiers for licensing.csv",
+    [string]$OutputDirectory = "C:\temp"
+)
 
 #region PowerShell Version Check
 
@@ -105,7 +114,6 @@ if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
         }
 
         Write-Host ""
-        Read-Host "Press Enter to exit"
         Exit
     }
 } else {
@@ -126,7 +134,6 @@ try {
     Write-Host "  Uninstall-Module Microsoft.Graph -AllVersions" -ForegroundColor White
     Write-Host "  Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck" -ForegroundColor White
     Write-Host ""
-    Read-Host "Press Enter to exit"
     Exit
 }
 
@@ -167,7 +174,6 @@ try {
     Write-Host "  - You have valid Microsoft 365 admin credentials" -ForegroundColor Yellow
     Write-Host "  - Your account has Directory.Read.All permissions" -ForegroundColor Yellow
     Write-Host "  - MFA is properly configured if required" -ForegroundColor Yellow
-    Read-Host "Press Enter to exit"
     Exit
 }
 
@@ -177,29 +183,24 @@ try {
 
 Write-Host "Importing Microsoft's product and service plan reference data..." -ForegroundColor Yellow
 
-# File path configuration - modify this if using a different location
-$csvPath = "C:\temp\Product names and service plan identifiers for licensing.csv"
-
-if (-Not (Test-Path $csvPath)) {
-    Write-Host "Error: CSV file not found at $csvPath" -ForegroundColor Red
+if (-Not (Test-Path $ProductCsvPath)) {
+    Write-Host "Error: CSV file not found at $ProductCsvPath" -ForegroundColor Red
     Write-Host ""
     Write-Host "Please download the file from:" -ForegroundColor Yellow
     Write-Host "https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference" -ForegroundColor Cyan
-    Write-Host "and save it to: $csvPath" -ForegroundColor Yellow
+    Write-Host "and save it to: $ProductCsvPath" -ForegroundColor Yellow
     Disconnect-MgGraph
-    Read-Host "Press Enter to exit"
     Exit
 }
 
 try {
-    [array]$Identifiers = Import-Csv -Path $csvPath
+    [array]$Identifiers = Import-Csv -Path $ProductCsvPath
     Write-Host "Successfully imported $($Identifiers.Count) reference entries!" -ForegroundColor Green
     Write-Host ""
 } catch {
     Write-Host "Error: Failed to import CSV file." -ForegroundColor Red
     Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
     Disconnect-MgGraph
-    Read-Host "Press Enter to exit"
     Exit
 }
 
@@ -230,7 +231,6 @@ try {
     Write-Host "Error: Unable to fetch SKU data from Microsoft Graph." -ForegroundColor Red
     Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
     Disconnect-MgGraph
-    Read-Host "Press Enter to exit"
     Exit
 }
 
@@ -240,8 +240,11 @@ try {
 
 Write-Host "Exporting SKU data with friendly names..." -ForegroundColor Yellow
 
-# Output file path - modify if using a different location
-$skuCsvPath = "C:\temp\SkuDataComplete.csv"
+if (-not (Test-Path -Path $OutputDirectory)) {
+    New-Item -Path $OutputDirectory -ItemType Directory -Force | Out-Null
+}
+
+$skuCsvPath = Join-Path -Path $OutputDirectory -ChildPath "SkuDataComplete.csv"
 
 try {
     $Skus | Select-Object SkuId, SkuPartNumber, `
@@ -256,7 +259,6 @@ try {
     Write-Host "Error: Failed to export SKU data." -ForegroundColor Red
     Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
     Disconnect-MgGraph
-    Read-Host "Press Enter to exit"
     Exit
 }
 
@@ -284,8 +286,7 @@ ForEach ($S in $Skus) {
 
 Write-Host "Processed $($SPData.Count) service plan entries" -ForegroundColor Green
 
-# Output file path - modify if using a different location
-$servicePlanCsvPath = "C:\Temp\ServicePlanDataComplete.csv"
+$servicePlanCsvPath = Join-Path -Path $OutputDirectory -ChildPath "ServicePlanDataComplete.csv"
 
 try {
     $SPData | Sort-Object ServicePlanId -Unique | Export-Csv -NoTypeInformation -Path $servicePlanCsvPath
@@ -296,7 +297,6 @@ try {
     Write-Host "Error: Failed to export Service Plan data." -ForegroundColor Red
     Write-Host "Details: $($_.Exception.Message)" -ForegroundColor Red
     Disconnect-MgGraph
-    Read-Host "Press Enter to exit"
     Exit
 }
 
@@ -322,7 +322,6 @@ Write-Host ""
 Disconnect-MgGraph
 Write-Host "Disconnected from Microsoft Graph." -ForegroundColor Green
 Write-Host ""
-Read-Host "Press Enter to exit"
 
 #endregion
 
