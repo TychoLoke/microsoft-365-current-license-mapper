@@ -334,14 +334,14 @@ if ($PricingCurrency -in @("USD", "EUR")) {
     } else {
       $PricingSourceLabel = "Built-in ($Currency)"
     }
-    Write-Host "Using built-in pricing (common licenses) in $Currency" -ForegroundColor Yellow
-    Write-Host "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list" -ForegroundColor Cyan
+    Write-InfoMessage "Using built-in pricing (common licenses) in $Currency"
+    Write-InfoMessage "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list"
   } else {
-    Write-Host "Built-in pricing selected but no SKU matches were found in the tenant list." -ForegroundColor Yellow
+    Write-Warning "Built-in pricing selected but no SKU matches were found in the tenant list."
   }
 }
 elseif ($HasCsvPricing) {
-  Write-Host "Pricing information detected - cost analysis will be included in reports" -ForegroundColor Green
+  Write-SuccessMessage "Pricing information detected - cost analysis will be included in reports"
   $PricingInfoAvailable = $True
   $PricingHashTable = @{}
 
@@ -354,7 +354,7 @@ elseif ($HasCsvPricing) {
   # Override default currency if specified in CSV
   If ($ImportSkus[0].Currency) {
     [string]$Currency = ($ImportSkus[0].Currency)
-    Write-Host "Currency set to: $Currency" -ForegroundColor Cyan
+    Write-InfoMessage "Currency set to: $Currency"
   }
 
   $PricingMatchedSkus = $PricingHashTable.Count
@@ -366,22 +366,22 @@ else {
   if ($PricingMatchedSkus -gt 0) {
     $PricingInfoAvailable = $True
     $PricingSourceLabel = "Built-in ($Currency)"
-    Write-Host "No pricing information found in CSV - using built-in USD pricing for common licenses" -ForegroundColor Yellow
-    Write-Host "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list" -ForegroundColor Cyan
-    Write-Host "To enable tenant-specific pricing, add 'Price' and 'Currency' columns to SkuDataComplete.csv" -ForegroundColor Gray
+    Write-InfoMessage "No pricing information found in CSV - using built-in USD pricing for common licenses"
+    Write-InfoMessage "Pricing coverage: $PricingMatchedSkus SKUs matched from tenant list"
+    Write-InfoMessage "To enable tenant-specific pricing, add 'Price' and 'Currency' columns to SkuDataComplete.csv"
   } else {
-    Write-Host "No pricing information found - cost analysis will be unavailable" -ForegroundColor Yellow
-    Write-Host "To enable cost analysis, add 'Price' and 'Currency' columns to SkuDataComplete.csv" -ForegroundColor Gray
+    Write-Warning "No pricing information found - cost analysis will be unavailable"
+    Write-InfoMessage "To enable cost analysis, add 'Price' and 'Currency' columns to SkuDataComplete.csv"
   }
 }
 
-Write-Host ""
+Write-Output ""
 
 #endregion
 
 #region Retrieve Licensed User Accounts
 
-Write-Host "Retrieving licensed user accounts from Microsoft 365..." -ForegroundColor Yellow
+Write-InfoMessage "Retrieving licensed user accounts from Microsoft 365..."
 
 $Users = Get-MgUser -All -ConsistencyLevel eventual -CountVariable Records `
   -Property id, displayName, userPrincipalName, country, department, assignedLicenses, `
@@ -389,13 +389,13 @@ $Users = Get-MgUser -All -ConsistencyLevel eventual -CountVariable Records `
   Where-Object { $_.AssignedLicenses.Count -gt 0 } | Sort-Object DisplayName
 
 If (!($Users)) {
-  Write-Host "No licensed user accounts found in the tenant." -ForegroundColor Yellow
+  Write-Warning "No licensed user accounts found in the tenant."
   Disconnect-MgGraph
-  Exit
+  exit 1
 }
 Else {
-  Write-Host ("{0} licensed user accounts found!" -f $Users.Count) -ForegroundColor Green
-  Write-Host ""
+  Write-SuccessMessage ("{0} licensed user accounts found!" -f $Users.Count)
+  Write-Output ""
 }
 
 # Get organization information and unique department/country values
@@ -416,13 +416,13 @@ $i = 0
 
 #region Process Each User Account
 
-Write-Host "Processing license assignments for each user..." -ForegroundColor Cyan
-Write-Host ""
+Write-InfoMessage "Processing license assignments for each user..."
+Write-Output ""
 
 ForEach ($User in $Users) {
   $UnusedAccountWarning = "OK"; $i++; $UserCosts = 0
   $ErrorMsg = ""; $LastLicenseChange = ""
-  Write-Host ("Processing account {0} {1}/{2}" -f $User.UserPrincipalName, $i, $Users.Count)
+  Write-InfoMessage ("Processing account {0} {1}/{2}" -f $User.UserPrincipalName, $i, $Users.Count)
   If ([string]::IsNullOrWhiteSpace($User.licenseAssignmentStates) -eq $False) {
     # Only process account if it has some licenses
     [array]$LicenseInfo = $Null; [array]$DisabledPlans = $Null; 
@@ -3156,8 +3156,8 @@ $ScriptBlock += @"
 $HtmlReport = $HtmlHead + $DashboardHTML + $ActionInsightsHTML + $HtmlBody1 + $HtmlBody2 + $HtmlTail + $ScriptBlock
 $HtmlReport | Out-File $HtmlReportFile -Encoding UTF8
 
-Write-Host "Professional HTML report with advanced features generated successfully!" -ForegroundColor Green
-Write-Host "  Features: Dark Mode, Interactive Charts, Advanced Search, Export to CSV" -ForegroundColor Cyan
+Write-SuccessMessage "Professional HTML report with advanced features generated successfully!"
+Write-InfoMessage "  Features: Dark Mode, Interactive Charts, Advanced Search, Export to CSV"
 
 #endregion
 
@@ -3166,25 +3166,25 @@ Write-Host "  Features: Dark Mode, Interactive Charts, Advanced Search, Export t
 $Report | Export-CSV -NoTypeInformation $CSVOutputFile
 
 # Display completion summary
-Write-Host ""
-Write-Host "===============================================" -ForegroundColor Green
-Write-Host "   License Report Generation Complete!" -ForegroundColor Green
-Write-Host "===============================================" -ForegroundColor Green
-Write-Host ""
-Write-Host "Output Files:" -ForegroundColor Cyan
-Write-Host "  CSV Report:  $CSVOutputFile" -ForegroundColor White
-Write-Host "  HTML Report: $HtmlReportFile" -ForegroundColor White
-Write-Host ""
-Write-Host "Report Summary:" -ForegroundColor Cyan
-Write-Host "  Licensed Accounts:     $($Report.Count)" -ForegroundColor White
-Write-Host "  Underused Accounts:    $($UnderUsedAccounts.Count)" -ForegroundColor White
-Write-Host "  Duplicate Licenses:    $DuplicateSKULicenses" -ForegroundColor White
-Write-Host "  License Errors:        $LicenseErrorCount" -ForegroundColor White
-Write-Host ""
-Write-Host "Disconnecting from Microsoft Graph..." -ForegroundColor Yellow
+Write-Output ""
+Write-SuccessMessage "==============================================="
+Write-SuccessMessage "   License Report Generation Complete!"
+Write-SuccessMessage "==============================================="
+Write-Output ""
+Write-InfoMessage "Output Files:"
+Write-InfoMessage "  CSV Report:  $CSVOutputFile"
+Write-InfoMessage "  HTML Report: $HtmlReportFile"
+Write-Output ""
+Write-InfoMessage "Report Summary:"
+Write-InfoMessage "  Licensed Accounts:     $($Report.Count)"
+Write-InfoMessage "  Underused Accounts:    $($UnderUsedAccounts.Count)"
+Write-InfoMessage "  Duplicate Licenses:    $DuplicateSKULicenses"
+Write-InfoMessage "  License Errors:        $LicenseErrorCount"
+Write-Output ""
+Write-InfoMessage "Disconnecting from Microsoft Graph..."
 Disconnect-MgGraph
-Write-Host "Session ended successfully." -ForegroundColor Green
-Write-Host ""
+Write-SuccessMessage "Session ended successfully."
+Write-Output ""
 
 <#
     DISCLAIMER:
